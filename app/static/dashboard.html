@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikReach - TikTok Outreach & DM Automation</title>
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script>
+    // Clean up any stale Service Workers or Caches from previous projects on port 8000
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let reg of registrations) {
+          reg.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(keys) {
+        for (let key of keys) {
+          caches.delete(key);
+        }
+      });
+    }
+  </script>
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/static/img/omnireach-logo.png">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <a href="/" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit;">
+          <img src="/static/img/omnireach-logo.png" alt="OmniReach Logo" style="width: 38px; height: 38px; border-radius: 10px; object-fit: cover; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);">
+          <div class="brand-text">
+            <h2>OmniReach</h2>
+            <span>TikTok Automation</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="nav-menu">
+        <a href="#dashboard" class="nav-item active" id="nav-dashboard">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span>Dashboard & Setup</span>
+        </a>
+        <a href="#results" class="nav-item" id="nav-results">
+          <i class="fa-solid fa-clipboard-check"></i>
+          <span>Result & Bukti DM</span>
+          <span class="badge" id="results-count-badge">0</span>
+        </a>
+        <a href="#logs" class="nav-item" id="nav-logs">
+          <i class="fa-solid fa-terminal"></i>
+          <span>Live Logs</span>
+        </a>
+        <a href="/" class="nav-item" style="margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Beranda Landing Page</span>
+        </a>
+      </nav>
+
+      <!-- Account / Session Widget in Sidebar -->
+      <div class="session-box">
+        <div class="session-header">
+          <span class="pulse-dot" id="session-dot"></span>
+          <span class="session-label" id="session-label">Mengecek Sesi...</span>
+        </div>
+        <div class="d-flex items-center justify-between" style="margin-bottom: 4px;">
+          <p class="session-user" id="session-username" style="margin-bottom: 0;">Memeriksa browser...</p>
+          <button id="btn-edit-username" title="Sesuaikan Username Akun" style="display:none; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 6px;">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+        </div>
+        <p class="session-hint" id="session-hint" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.3;">
+          Akun pengirim aktif untuk DM
+        </p>
+        <button class="btn btn-sm btn-primary w-100" id="btn-login-browser">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Login / Ganti Akun
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="version-tag">
+          <i class="fa-solid fa-shield-halved"></i> Anti-Detection Active
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="page-title-area">
+          <h1 id="page-title">Dashboard & Outreach Campaign</h1>
+          <p id="page-subtitle">Otomatisasi pengiriman pesan TikTok langsung ke target list Anda</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline" id="btn-refresh-status" title="Refresh Sesi & Status">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+          </button>
+          <div class="campaign-pill" id="campaign-status-pill">
+            <span class="status-indicator idle"></span>
+            <span id="campaign-status-text">Status: Siap (Idle)</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- TAB 1: DASHBOARD -->
+      <section id="tab-dashboard" class="tab-pane active">
+        
+        <!-- Authentic Hero Spotlight Card with Purposeful Studio Imagery -->
+        <div class="hero-banner-card">
+          <div class="hero-banner-content">
+            <div class="hero-tag">
+              <i class="fa-solid fa-bullhorn"></i> Smart Creator Outreach
+            </div>
+            <h2>Otomasi DM Personal dengan Bukti Screenshot Otentik</h2>
+            <p>Jangkau puluhan hingga ratusan kreator TikTok dari file target Anda dengan ritme pengiriman manusiawi yang aman dari pembatasan akun. Setiap pesan yang terkirim didokumentasikan langsung dalam bentuk tangkapan layar.</p>
+            <div class="hero-features-row">
+              <div class="hero-feature-item">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Anti-Spam Human Delay</span>
+              </div>
+              <div class="hero-feature-item">
+                <i class="fa-solid fa-camera"></i>
+                <span>Otomatis Ambil Bukti Chat</span>
+              </div>
+              <div class="hero-feature-item">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Kustomisasi Kuota Terarah</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="hero-media-wrapper">
+            <img src="/static/img/hero_outreach_banner.jpg" alt="Creator Outreach Workspace">
+            <div class="hero-badge-overlay">
+              <i class="fa-solid fa-bolt text-primary"></i> Live Studio Engine
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid: Left Setup, Right Controls & Live Progress -->
+        <div class="dashboard-grid">
+          
+          <!-- Column 1: Input & Targets -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-file-arrow-up text-primary"></i>
+                <h3>1. Masukkan Target Link TikTok</h3>
+              </div>
+              <span class="badge badge-accent" id="target-count-badge">0 Target</span>
+            </div>
+            
+            <div class="card-body">
+              <!-- Info Akun Pengirim Aktif -->
+              <div class="sender-info-banner" id="sender-info-banner" style="background: rgba(225, 29, 72, 0.07); border: 1px solid rgba(225, 29, 72, 0.2); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); flex-shrink: 0;">
+                  <i class="fa-brands fa-tiktok text-primary" style="font-size: 1.2rem;"></i>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Akun TikTok Pengirim:</div>
+                  <div style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                    <span id="sender-account-display">Memeriksa status...</span>
+                    <span class="badge badge-accent" id="sender-account-status" style="font-size: 0.68rem; padding: 2px 6px;">Cek...</span>
+                  </div>
+                  <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">
+                    💡 Semua DM outreach dikirim dari akun ini. <em>Jangan masukkan akun ini ke daftar target!</em>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Upload Mode Switcher -->
+              <div class="input-tabs">
+                <button class="tab-btn active" id="btn-tab-upload">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Upload File (.txt / .csv)
+                </button>
+                <button class="tab-btn" id="btn-tab-paste">
+                  <i class="fa-solid fa-paste"></i> Paste Link Manual
+                </button>
+              </div>
+
+              <!-- Upload Drag & Drop Zone -->
+              <div class="drop-zone" id="drop-zone">
+                <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+                <h4>Drag & Drop file target di sini</h4>
+                <p>Mendukung file <code>.txt</code> atau <code>.csv</code> (satu link / username per baris)</p>
+                <label for="target-file-input" class="btn btn-secondary">
+                  <i class="fa-regular fa-folder-open"></i> Pilih File dari Komputer
+                </label>
+                <input type="file" id="target-file-input" accept=".txt,.csv" style="display:none;">
+                <div class="file-info" id="file-info" style="display:none;">
+                  <i class="fa-solid fa-circle-check text-success"></i>
+                  <span id="file-name">links.txt</span>
+                </div>
+              </div>
+
+              <!-- Paste Manual Box (Hidden by default) -->
+              <div class="paste-zone" id="paste-zone" style="display:none;">
+                <label for="manual-links-text" class="form-label">Tempel link / username TikTok:</label>
+                <textarea id="manual-links-text" class="form-control" rows="6" placeholder="https://www.tiktok.com/@creator1&#10;https://www.tiktok.com/@creator2&#10;@creator3"></textarea>
+                <button class="btn btn-sm btn-primary mt-2" id="btn-parse-text">
+                  <i class="fa-solid fa-list-check"></i> Proses Target Link
+                </button>
+              </div>
+
+              <!-- Targets Preview List -->
+              <div class="targets-preview-wrapper mt-3" id="targets-preview-wrapper" style="display:none;">
+                <div class="preview-header">
+                  <span>Daftar Target Terdeteksi (<strong id="preview-count">0</strong>):</span>
+                  <button class="btn-text text-danger" id="btn-clear-targets">
+                    <i class="fa-regular fa-trash-can"></i> Bersihkan
+                  </button>
+                </div>
+                <div class="targets-scroll-list" id="targets-scroll-list">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Campaign Settings & Limit Selector -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-sliders text-primary"></i>
+                <h3>2. Pengaturan DM & Batas Pengiriman</h3>
+              </div>
+            </div>
+            
+            <div class="card-body">
+              <!-- Campaign Name -->
+              <div class="form-group">
+                <label for="campaign-name" class="form-label">Nama Campaign / Batch:</label>
+                <input type="text" id="campaign-name" class="form-control" value="Outreach Batch #1" placeholder="Contoh: Endorsement Creator Ramadan">
+              </div>
+
+              <!-- Limit Selector -->
+              <div class="form-group highlighted-box">
+                <div class="limit-header">
+                  <div>
+                    <label class="form-label font-bold">Berapa akun yang ingin di-DM?</label>
+                    <p class="form-hint">Tentukan kuota target yang akan dikirimi pesan dari file</p>
+                  </div>
+                  <div class="limit-value-badge">
+                    <span id="limit-display">10</span> <span class="limit-total" id="limit-total-display">/ 0 akun</span>
+                  </div>
+                </div>
+
+                <!-- Range Slider + Quick Buttons -->
+                <div class="slider-wrapper">
+                  <input type="range" id="limit-slider" min="1" max="100" value="10" class="custom-slider">
+                </div>
+
+                <div class="limit-quick-buttons">
+                  <button type="button" class="btn-chip" data-limit="5">5</button>
+                  <button type="button" class="btn-chip active" data-limit="10">10</button>
+                  <button type="button" class="btn-chip" data-limit="20">20</button>
+                  <button type="button" class="btn-chip" data-limit="50">50</button>
+                  <button type="button" class="btn-chip" data-limit="all" id="btn-chip-all">Kirim Semua</button>
+                </div>
+              </div>
+
+              <!-- Message Template -->
+              <div class="form-group">
+                <div class="d-flex justify-between items-center mb-1">
+                  <label for="message-template" class="form-label">Template Pesan DM:</label>
+                  <div class="variable-chips">
+                    <span class="chip-tag" title="Klik untuk menyisipkan" onclick="insertVariable('{username}')">+{username}</span>
+                  </div>
+                </div>
+                <textarea id="message-template" class="form-control" rows="4" placeholder="Halo kak @{username}, salam kenal! Kami tertarik untuk kolaborasi campaign terbaru kami..."></textarea>
+                <p class="form-hint">Variabel <code>{username}</code> akan otomatis diganti dengan username masing-masing target.</p>
+              </div>
+
+              <!-- Delay Anti-Ban -->
+              <div class="form-group">
+                <label class="form-label">Jeda Aman Anti-Ban (Detik):</label>
+                <div class="d-flex gap-2 items-center">
+                  <div class="input-group">
+                    <span class="input-prefix">Min</span>
+                    <input type="number" id="delay-min" class="form-control" value="20" min="5" max="300">
+                  </div>
+                  <span class="text-muted font-bold">s/d</span>
+                  <div class="input-group">
+                    <span class="input-prefix">Max</span>
+                    <input type="number" id="delay-max" class="form-control" value="45" min="10" max="600">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mode Switch (Simulasi / Live) -->
+              <div class="form-group toggle-row">
+                <div>
+                  <span class="toggle-title">Mode Simulasi / Demo</span>
+                  <p class="toggle-hint">Uji coba alur dan hasil screenshot contoh tanpa mengirim DM asli</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-simulation">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Mode Headless (Senyap & Super Ringan) -->
+              <div class="form-group toggle-row">
+                <div>
+                  <span class="toggle-title"><i class="fa-solid fa-ghost text-primary"></i> Mode Headless (Senyap & Ringan)</span>
+                  <p class="toggle-hint">Jalankan Chrome di latar belakang tanpa jendela visual (Hemat RAM & CPU hingga 70%)</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-headless">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Auto-Solve Puzzle Captcha -->
+              <div class="form-group toggle-row">
+                <div>
+                  <span class="toggle-title"><i class="fa-solid fa-puzzle-piece text-warning"></i> Auto-Solve Puzzle Captcha (AI)</span>
+                  <p class="toggle-hint">Otomatis menganalisis celah puzzle TikTok dan menggeser slider dengan kurva gerak manusiawi</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-captcha-solver" checked>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Turbo Engine Status -->
+              <div class="turbo-badge-info" style="display: flex; align-items: center; gap: 8px; background: rgba(5, 150, 105, 0.08); border: 1px solid rgba(5, 150, 105, 0.2); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 14px; font-size: 0.78rem; color: var(--success); font-weight: 600;">
+                <i class="fa-solid fa-bolt"></i>
+                <span>Turbo Engine Aktif: Streaming video feed & tracker otomatis diblokir (Hemat Kuota & 3x Lebih Cepat)</span>
+              </div>
+
+              <!-- Execution Buttons -->
+              <div class="action-buttons-row mt-4">
+                <button class="btn btn-primary btn-lg" id="btn-start-campaign">
+                  <i class="fa-solid fa-play"></i> Mulai Outreach Sekarang
+                </button>
+                <button class="btn btn-warning btn-lg" id="btn-pause-campaign" style="display:none;">
+                  <i class="fa-solid fa-pause"></i> Jeda
+                </button>
+                <button class="btn btn-success btn-lg" id="btn-resume-campaign" style="display:none;">
+                  <i class="fa-solid fa-play"></i> Lanjutkan
+                </button>
+                <button class="btn btn-danger btn-lg" id="btn-stop-campaign" style="display:none;">
+                  <i class="fa-solid fa-stop"></i> Hentikan
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Progress & Activity Stream Banner -->
+        <div class="card mt-4" id="live-progress-card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-chart-line text-info"></i>
+              <h3>Progress & Live Activity</h3>
+            </div>
+            <div class="progress-stats">
+              <span id="progress-ratio">0 / 0 Target</span>
+              <span class="progress-percent" id="progress-percent">0%</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+
+            <!-- Mini Live Console -->
+            <div class="mini-console mt-3">
+              <div class="console-header">
+                <span><i class="fa-solid fa-terminal"></i> Console Audit Log</span>
+                <button class="btn-icon" id="btn-clear-console" title="Clear Console"><i class="fa-solid fa-trash"></i></button>
+              </div>
+              <div class="console-body" id="console-logs">
+                <div class="log-line info">[SISTEM] Siap menerima target link dan menjalankan outreach campaign.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: RESULTS & PROOFS -->
+      <section id="tab-results" class="tab-pane">
+        <!-- Stats Summary Counters -->
+        <div class="stats-grid mb-4">
+          <div class="stat-card">
+            <div class="stat-icon icon-total">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Diproses</span>
+              <h2 class="stat-value" id="stat-total">0</h2>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-success">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Berhasil Terkirim</span>
+              <h2 class="stat-value text-success" id="stat-sent">0</h2>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-warning">
+              <i class="fa-solid fa-lock"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">DM Tertutup / Privat</span>
+              <h2 class="stat-value text-warning" id="stat-closed">0</h2>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-danger">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Gagal / Error</span>
+              <h2 class="stat-value text-danger" id="stat-failed">0</h2>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results Table Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-images text-primary"></i>
+              <h3>Daftar Selesai & Bukti Pengiriman DM</h3>
+            </div>
+            <div class="table-actions">
+              <div class="search-input-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-results-input" placeholder="Cari username...">
+              </div>
+              
+              <div class="filter-select-box">
+                <select id="filter-status-select" class="form-control">
+                  <option value="all">Semua Status</option>
+                  <option value="sent">Berhasil Terkirim</option>
+                  <option value="dm_closed">DM Tertutup</option>
+                  <option value="failed">Gagal</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+
+              <button class="btn btn-outline" id="btn-export-csv">
+                <i class="fa-solid fa-download"></i> Export CSV
+              </button>
+
+              <button class="btn btn-outline-danger" id="btn-clear-results" title="Hapus semua hasil DM & reset data">
+                <i class="fa-solid fa-trash-can"></i> Hapus Semua Hasil
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="data-table" id="results-table">
+                <thead>
+                  <tr>
+                    <th>Target / Profil TikTok</th>
+                    <th>Status</th>
+                    <th>Isi Pesan Terkirim</th>
+                    <th>Waktu Pengiriman</th>
+                    <th class="text-center">Bukti Screenshot</th>
+                  </tr>
+                </thead>
+                <tbody id="results-table-body">
+                  <tr class="empty-row">
+                    <td colspan="5" class="text-center py-5">
+                      <i class="fa-regular fa-folder-open empty-icon"></i>
+                      <p>Belum ada data pengiriman. Silakan mulai campaign di tab Dashboard.</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: FULL LOGS -->
+      <section id="tab-logs" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-terminal text-info"></i>
+              <h3>Riwayat Log Aktivitas Lengkap</h3>
+            </div>
+            <button class="btn btn-sm btn-outline" id="btn-refresh-full-logs">
+              <i class="fa-solid fa-arrows-rotate"></i> Muat Ulang Log
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="full-log-viewer" id="full-log-viewer">
+              <!-- Logs populated via JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Screenshot Proof Modal Dialog -->
+  <div class="modal" id="proof-modal">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-image text-primary"></i>
+          <span id="modal-target-name">Bukti Screenshot DM: @username</span>
+        </div>
+        <button class="modal-close" id="btn-close-modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="proof-image-wrapper">
+          <img id="modal-proof-img" src="" alt="Bukti DM TikTok">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-info">
+          <span id="modal-sent-time"><i class="fa-regular fa-clock"></i> -</span>
+        </div>
+        <div class="modal-actions">
+          <a id="btn-download-proof" href="#" download class="btn btn-outline">
+            <i class="fa-solid fa-arrow-down"></i> Unduh Gambar
+          </a>
+          <button class="btn btn-secondary" id="btn-modal-close-action">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/app.js?v=2"></script>
+</body>
+</html>

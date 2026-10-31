@@ -1,0 +1,22 @@
+{
+  "name": "omnireach-outreach-automation",
+  "version": "2.0.0",
+  "description": "Enterprise Omnichannel Outreach & Marketing Automation Platform (TikTok, WA, IG, Cold Email)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --watch server.js",
+    "dev": "node --watch server.js",
+    "login": "node login_helper.js",
+    "clean": "node clean_browser_lock.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.1",
+    "sqlite3": "^5.1.7",
+    "playwright": "^1.45.0",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1"
+  }
+}
+

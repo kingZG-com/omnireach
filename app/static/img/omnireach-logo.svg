@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none">
+  <!-- OmniReach Core Brand Emblem -->
+  <defs>
+    <linearGradient id="omniGrad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="signalGrad" x1="16" y1="16" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Base Container -->
+  <rect width="48" height="48" rx="12" fill="url(#omniGrad)" />
+
+  <!-- Outer Orbit Ring (Omni - Universal Presence) -->
+  <circle cx="24" cy="24" r="14" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" stroke-dasharray="3 3" />
+
+  <!-- The 4 Channel Nodes (TikTok, WA, IG, Email) -->
+  <circle cx="24" cy="10" r="2.5" fill="#06b6d4" />  <!-- Top: Email Signal -->
+  <circle cx="38" cy="24" r="2.5" fill="#2563eb" />  <!-- Right: WhatsApp Node -->
+  <circle cx="24" cy="38" r="2.5" fill="#10b981" />  <!-- Bottom: TikTok Engine -->
+  <circle cx="10" cy="24" r="2.5" fill="#ec4899" />  <!-- Left: Instagram Channel -->
+
+  <!-- Central Dynamic Vector Apex (Reach - Forward Connection) -->
+  <path d="M19 29L24 18L29 29L24 26L19 29Z" fill="url(#signalGrad)" />
+  <circle cx="24" cy="23.5" r="2" fill="#ffffff" />
+</svg>
+
