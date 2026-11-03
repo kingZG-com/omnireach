@@ -359,8 +359,8 @@ function initFileUploader() {
 }
 
 function setTargets(targets) {
-  loadedTargets = targets;
-  const count = targets.length;
+  loadedTargets = Array.isArray(targets) ? targets : [];
+  const count = loadedTargets.length;
   
   document.getElementById("target-count-badge").textContent = `${count} Target`;
   document.getElementById("preview-count").textContent = count;
