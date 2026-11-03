@@ -399,22 +399,45 @@ class TikTokService {
       // Di TikTok Web, 'Enter' biasa langsung MENGIRIM pesan.
       // Agar pesan tetap MENYATU dalam 1 balon obrolan dengan paragraf baru,
       // kita gunakan 'Shift+Enter' di antara setiap baris!
-      const lines = message.split(/\r?\n/);
-      for (let i = 0; i < lines.length; i++) {
-        const lineText = lines[i];
-        if (lineText.length > 0) {
-          try {
-            await page.keyboard.insertText(lineText);
-          } catch (err) {
-            await page.keyboard.type(lineText, { delay: 10 });
+            // ? INPUT PESAN MULTI-LINE UTUH (1 BALON CHAT):
+      // Di TikTok Web, event 'Enter' biasa langsung MENGIRIM pesan.
+      // Agar template dengan baris baru / paragraf tetap MENYATU dalam 1 balon pesan,
+      // kita gunakan document.execCommand('insertText') terlebih dahulu agar tidak memicu Enter terpisah.
+      let inputSuccess = false;
+      try {
+        inputSuccess = await page.evaluate((text) => {
+          const active = document.activeElement;
+          if (!active) return false;
+          const ok = document.execCommand('insertText', false, text);
+          if (ok) {
+            active.dispatchEvent(new Event('input', { bubbles: true }));
+            active.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
           }
-        }
-        // Buat baris baru tanpa menembakkan event kirim pesan
-        if (i < lines.length - 1) {
-          await page.keyboard.down('Shift');
-          await page.keyboard.press('Enter');
-          await page.keyboard.up('Shift');
-          await new Promise((r) => setTimeout(r, 100));
+          return false;
+        }, message);
+      } catch (e) {
+        inputSuccess = false;
+      }
+
+      // Fallback jika execCommand tidak mengisi: gunakan kombinasi resmi Playwright Shift+Enter
+      const currentVal = await inputBox.innerText().catch(() => '');
+      if (!inputSuccess || !currentVal || !currentVal.trim()) {
+        const lines = message.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+          const lineText = lines[i];
+          if (lineText.length > 0) {
+            try {
+              await page.keyboard.insertText(lineText);
+            } catch (err) {
+              await page.keyboard.type(lineText, { delay: 10 });
+            }
+          }
+          // Di Playwright gunakan sintaks resmi 'Shift+Enter' agar tidak mengirim pesan terpisah
+          if (i < lines.length - 1) {
+            await page.keyboard.press('Shift+Enter');
+            await new Promise((r) => setTimeout(r, 150));
+          }
         }
       }
 
