@@ -30,6 +30,7 @@ class CampaignController {
       res.json({
         success: true,
         total: targets.length,
+        total_found: targets.length,
         targets
       });
     } catch (err) {
@@ -39,12 +40,12 @@ class CampaignController {
 
   parseText(req, res) {
     try {
-      const { text } = req.body;
-      if (!text) {
+      const rawText = req.body.raw_text || req.body.text || '';
+      if (!rawText.trim()) {
         return res.status(400).json({ error: 'Input teks target kosong.' });
       }
 
-      const lines = text.split(/\r?\n/);
+      const lines = rawText.split(/\r?\n/);
       const targets = [];
       const seen = new Set();
 
@@ -62,6 +63,7 @@ class CampaignController {
       res.json({
         success: true,
         total: targets.length,
+        total_found: targets.length,
         targets
       });
     } catch (err) {
