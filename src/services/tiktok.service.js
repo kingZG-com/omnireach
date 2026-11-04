@@ -385,7 +385,17 @@ class TikTokService {
         message: `Membuka obrolan dengan @${username}...`
       });
 
-      if (messageBtn) {
+      // Jika endpoint direct message (u=...) tersedia, langsung buka room chat secara mulus
+      if (targetMessageHref) {
+        const fullMsgUrl = targetMessageHref.startsWith('http')
+          ? targetMessageHref
+          : `https://www.tiktok.com${targetMessageHref.startsWith('/') ? '' : '/'}${targetMessageHref}`;
+        websocket.broadcast('log', {
+          level: 'INFO',
+          message: `Membuka link endpoint chat langsung: ${fullMsgUrl}...`
+        });
+        await page.goto(fullMsgUrl, { waitUntil: 'domcontentloaded', timeout: 35000 }).catch(() => {});
+      } else if (messageBtn) {
         websocket.broadcast('log', {
           level: 'INFO',
           message: `Mengklik tombol Message profil @${username}...`
@@ -393,20 +403,7 @@ class TikTokService {
         await messageBtn.click().catch(() => {});
       }
 
-      await new Promise((r) => setTimeout(r, 2500));
-
-      // Jika URL belum berpindah ke room chat dan endpoint href tersedia
-      if (!page.url().includes('u=') && targetMessageHref) {
-        const fullMsgUrl = targetMessageHref.startsWith('http')
-          ? targetMessageHref
-          : `https://www.tiktok.com${targetMessageHref.startsWith('/') ? '' : '/'}${targetMessageHref}`;
-        websocket.broadcast('log', {
-          level: 'INFO',
-          message: `Membuka langsung link endpoint chat: ${fullMsgUrl}...`
-        });
-        await page.goto(fullMsgUrl, { waitUntil: 'domcontentloaded', timeout: 35000 }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 2500));
-      }
+      await new Promise((r) => setTimeout(r, 2000));
 
       const loginAfterMsgClick = await page
         .$('#loginContainer, [data-e2e="login-modal"], div[id*="loginContainer"]')
@@ -418,7 +415,7 @@ class TikTokService {
         websocket.broadcast('log', {
           level: 'ERROR',
           message:
-            '? TikTok meminta login saat membuka tombol obrolan. Silakan login kembali melalui tombol "Login / Ganti Akun" di sidebar.'
+            '❌ TikTok meminta login saat membuka tombol obrolan. Silakan login kembali melalui tombol "Login / Ganti Akun" di sidebar.'
         });
         return {
           status: 'failed',
@@ -428,33 +425,26 @@ class TikTokService {
         };
       }
 
-      // Cari kolom input chat (pastikan bukan search box dan cek apakah muncul error robot)
+      // Cari kolom input chat (baik di halaman room chat maupun di drawer pesan)
       let inputBox = null;
       let isRestrictedOrError = false;
       const waitInputStart = Date.now();
-      while (Date.now() - waitInputStart < 15000) {
-        // Cek cepat apakah TikTok menampilkan robot 'Something went wrong'
-        const hasErrorRobot = await page.evaluate(() => {
-          const text = document.body ? document.body.innerText : '';
-          return text.includes('Something went wrong') || text.includes('Sorry about that');
-        }).catch(() => false);
-
-        if (hasErrorRobot) {
-          isRestrictedOrError = true;
-          break;
-        }
-
+      while (Date.now() - waitInputStart < 20000) {
         for (const sel of SELECTORS.CHAT_INPUTS) {
           try {
             const el = await page.$(sel);
             if (el && (await el.isVisible())) {
               const dataE2e = (await el.getAttribute('data-e2e').catch(() => '')) || '';
               const placeholder = (await el.getAttribute('placeholder').catch(() => '')) || '';
-              if (dataE2e === 'search-user-input' || placeholder.toLowerCase() === 'search') {
+              if (
+                dataE2e === 'search-user-input' ||
+                placeholder.toLowerCase().includes('search') ||
+                placeholder.toLowerCase().includes('cari')
+              ) {
                 continue;
               }
               const box = await el.boundingBox().catch(() => null);
-              if (box && box.y > 250) {
+              if (box && box.height > 15) {
                 inputBox = el;
                 break;
               }
@@ -462,6 +452,20 @@ class TikTokService {
           } catch (e) {}
         }
         if (inputBox) break;
+
+        // Cek jika TikTok menampilkan robot error setelah minimal 6 detik (agar tidak false positive saat loading)
+        if (Date.now() - waitInputStart > 6000) {
+          const hasErrorRobot = await page.evaluate(() => {
+            const text = document.body ? document.body.innerText : '';
+            return text.includes('Something went wrong') || text.includes('Sorry about that');
+          }).catch(() => false);
+
+          if (hasErrorRobot) {
+            isRestrictedOrError = true;
+            break;
+          }
+        }
+
         await new Promise((r) => setTimeout(r, 1000));
       }
 

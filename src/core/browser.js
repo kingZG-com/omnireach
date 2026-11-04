@@ -100,8 +100,6 @@ async function applyTurboRouting(context) {
     // Blokir tracker telemetri berat
     if (
       reqUrl.includes('google-analytics') ||
-      reqUrl.includes('mon.tiktokv.com') ||
-      reqUrl.includes('mcs.tiktok.com') ||
       reqUrl.includes('byteoversea.com/telemetry')
     ) {
       return route.abort();
