@@ -206,6 +206,31 @@ function initBrowserLogin() {
       }
     });
   }
+
+  const btnLogout = document.getElementById("btn-logout-session");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", async () => {
+      const confirmLogout = confirm("Apakah Anda yakin ingin menghapus sesi TikTok yang tersimpan untuk login akun baru?");
+      if (!confirmLogout) return;
+
+      btnLogout.disabled = true;
+      btnLogout.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghapus...';
+
+      try {
+        const res = await fetch("/api/session/logout", { method: "POST" });
+        const data = await res.json();
+        appendLog("SUCCESS", data.message || "Sesi akun berhasil dihapus.");
+        alert("Sesi akun TikTok berhasil dihapus! Silakan klik tombol 'Login / Ganti Akun' untuk login akun baru.");
+        checkSessionStatus();
+      } catch (err) {
+        appendLog("ERROR", "Gagal menghapus sesi: " + err.message);
+        alert("Gagal menghapus sesi: " + err.message);
+      } finally {
+        btnLogout.disabled = false;
+        btnLogout.innerHTML = '<i class="fa-solid fa-trash-can"></i> Hapus Sesi Tersimpan';
+      }
+    });
+  }
 }
 
 async function checkSessionStatus() {

@@ -197,6 +197,20 @@ class AuthService {
       return { success: false, error: err.message };
     }
   }
+  clearSession() {
+    if (fs.existsSync(SESSION_FILE)) {
+      try { fs.unlinkSync(SESSION_FILE); } catch (e) {}
+    }
+    if (fs.existsSync(COOKIES_FILE)) {
+      try { fs.unlinkSync(COOKIES_FILE); } catch (e) {}
+    }
+    if (fs.existsSync(PROFILE_DIR)) {
+      try {
+        fs.rmSync(PROFILE_DIR, { recursive: true, force: true });
+      } catch (e) {}
+    }
+    return { success: true, message: 'Sesi akun berhasil dihapus.' };
+  }
 
   updateUsername(username) {
     const clean = username.trim().replace(/^@+/, '');

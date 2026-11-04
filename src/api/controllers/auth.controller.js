@@ -37,6 +37,18 @@ class AuthController {
       message: 'Jendela browser login TikTok telah dibuka di layar komputer Anda.'
     });
   }
+  logout(req, res) {
+    try {
+      const result = authService.clearSession();
+      websocket.broadcast('log', {
+        level: 'INFO',
+        message: 'Sesi akun TikTok telah dihapus. Silakan login akun baru.'
+      });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 
   updateUsername(req, res) {
     try {
