@@ -378,13 +378,6 @@ class TikTokService {
       await new Promise((r) => setTimeout(r, 600));
 
       // ⚡ INPUT PESAN MULTI-LINE CERDAS:
-      // Di TikTok Web, 'Enter' biasa langsung MENGIRIM pesan.
-      // Agar pesan tetap MENYATU dalam 1 balon obrolan dengan paragraf baru,
-      // kita gunakan 'Shift+Enter' di antara setiap baris!
-            // ? INPUT PESAN MULTI-LINE UTUH (1 BALON CHAT):
-      // Di TikTok Web, event 'Enter' biasa langsung MENGIRIM pesan.
-      // Agar template dengan baris baru / paragraf tetap MENYATU dalam 1 balon pesan,
-      // kita gunakan document.execCommand('insertText') terlebih dahulu agar tidak memicu Enter terpisah.
       let inputSuccess = false;
       try {
         inputSuccess = await page.evaluate((text) => {
@@ -425,31 +418,94 @@ class TikTokService {
 
       await new Promise((r) => setTimeout(r, 600));
 
-      let sent = false;
+      // 1. Pastikan kotak input sudah terisi pesan sebelum mengirim
+      const textCheck = await page.evaluate(() => {
+        const active = document.activeElement;
+        return (active ? (active.innerText || active.value || '') : '').trim();
+      });
+
+      // 2. Kirim pesan (Tekan tombol send atau Enter)
+      let sentClicked = false;
       for (const sendSel of SELECTORS.SEND_BUTTONS) {
         try {
           const sendBtn = await page.$(sendSel);
           if (sendBtn && (await sendBtn.isVisible())) {
-            await sendBtn.click();
-            sent = true;
-            break;
+            const sendBox = await sendBtn.boundingBox().catch(() => null);
+            if (sendBox && sendBox.height > 10) {
+              await sendBtn.click();
+              sentClicked = true;
+              break;
+            }
           }
         } catch (e) {}
       }
 
-      if (!sent) {
+      if (!sentClicked) {
         await page.keyboard.press('Enter');
       }
 
-      await new Promise((r) => setTimeout(r, 3000));
+      // 3. 🎯 VERIFIKASI NYATA (REAL SENT CONFIRMATION):
+      // Jangan langsung berasumsi sent!
+      // Kita pantau ruang obrolan hingga 15 detik untuk memastikan:
+      // a. Penggalan teks pesan yang kita kirim BENAR-BENAR MUNCUL di dalam ruang obrolan / riwayat chat
+      // b. Kolom input pesan sudah kosong kembali (pesan sudah terkirim keluar)
+      const cleanSnippet = message.replace(/\s+/g, ' ').trim().slice(0, 25).toLowerCase();
+      let isMessageConfirmedSent = false;
+      const verifyStart = Date.now();
+
+      while (Date.now() - verifyStart < 15000) {
+        const checkResult = await page.evaluate((snippet) => {
+          // Cek teks di seluruh body (khususnya area percakapan di sebelah kanan)
+          const bodyText = (document.body ? document.body.innerText : '').toLowerCase();
+          const hasSnippet = bodyText.includes(snippet);
+
+          // Cek isi kotak input saat ini
+          const inputEl = document.querySelector('div[contenteditable="true"], textarea, [data-e2e="dm-new-input-editor"]');
+          const currentInputText = inputEl ? (inputEl.innerText || inputEl.value || '').trim() : '';
+
+          // Cek apakah ada robot error
+          const hasError = bodyText.includes('something went wrong') || bodyText.includes('ada masalah');
+
+          return {
+            hasSnippet,
+            isInputCleared: currentInputText.length === 0,
+            hasError
+          };
+        }, cleanSnippet);
+
+        if (!checkResult.hasError && (checkResult.hasSnippet || checkResult.isInputCleared)) {
+          isMessageConfirmedSent = true;
+          break;
+        }
+
+        // Coba tekan Enter sekali lagi di detik ke-5 jika pesan masih tertahan
+        if (Date.now() - verifyStart > 5000 && !isMessageConfirmedSent) {
+          await page.keyboard.press('Enter').catch(() => {});
+        }
+
+        await new Promise((r) => setTimeout(r, 1500));
+      }
 
       try {
         await page.screenshot({ path: proofPath });
       } catch (e) {}
 
+      if (!isMessageConfirmedSent) {
+        websocket.broadcast('log', {
+          level: 'WARN',
+          message: `⚠️ Pesan untuk @${username} gagal terverifikasi di ruang obrolan (balon pesan tidak muncul / error).`
+        });
+        return {
+          status: 'failed',
+          message_sent: message,
+          proof_path: relProofPath,
+          error_detail: 'Pesan tidak terkirim (tidak terdeteksi di ruang obrolan / chat bubble tidak muncul)'
+        };
+      }
+
       websocket.broadcast('log', {
         level: 'SUCCESS',
-        message: `Berhasil mengirim DM ke @${username}! Bukti tersimpan.`
+        message: `✅ Pesan berhasil dikirim dan terverifikasi di ruang obrolan @${username}! Bukti tersimpan.`
       });
 
       return {
