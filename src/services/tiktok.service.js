@@ -90,7 +90,7 @@ class TikTokService {
         message: `Membuka profil target: ${targetUrl}...`
       });
 
-      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 120000 });
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 180000 });
       await this.dismissOverlays(page);
 
       // Cek apakah halaman dialihkan ke halaman login
@@ -135,7 +135,7 @@ class TikTokService {
       let messageBtn = null;
 
       const waitProfileStart = Date.now();
-      while (Date.now() - waitProfileStart < 90000) {
+      while (Date.now() - waitProfileStart < 180000) {
         await this.checkAndHandleCaptcha(page, autoSolveCaptcha);
         await this.dismissOverlays(page);
 
@@ -338,7 +338,7 @@ class TikTokService {
           level: 'INFO',
           message: `Membuka link endpoint chat langsung: ${fullMsgUrl}...`
         });
-        await page.goto(fullMsgUrl, { waitUntil: 'domcontentloaded', timeout: 120000 }).catch(() => {});
+        await page.goto(fullMsgUrl, { waitUntil: 'domcontentloaded', timeout: 180000 }).catch(() => {});
       }
 
       await new Promise((r) => setTimeout(r, 2000));
@@ -365,9 +365,9 @@ class TikTokService {
 
       // Cari kolom input chat (baik di halaman room chat maupun di drawer pesan)
       let inputBox = null;
-      let isRestrictedOrError = false;
       const waitInputStart = Date.now();
-      while (Date.now() - waitInputStart < 90000) {
+      // Menunggu dengan sabar hingga 3 menit agar koneksi lambat tetap tertangani
+      while (Date.now() - waitInputStart < 180000) {
         for (const sel of SELECTORS.CHAT_INPUTS) {
           try {
             const el = await page.$(sel);
@@ -382,7 +382,7 @@ class TikTokService {
                 continue;
               }
               const box = await el.boundingBox().catch(() => null);
-              if (box && box.height > 15) {
+              if (box && (box.height > 15 || box.width > 50)) {
                 inputBox = el;
                 break;
               }
@@ -391,41 +391,7 @@ class TikTokService {
         }
         if (inputBox) break;
 
-        // Cek jika TikTok menampilkan robot error setelah minimal 8 detik (bilingual: Inggris & Indonesia)
-        if (Date.now() - waitInputStart > 30000) {
-          const hasErrorRobot = await page.evaluate(() => {
-            const text = document.body ? document.body.innerText : '';
-            return (
-              text.includes('Something went wrong') ||
-              text.includes('Sorry about that') ||
-              text.includes('Ada masalah') ||
-              text.includes('Maaf atas hal tersebut')
-            );
-          }).catch(() => false);
-
-          if (hasErrorRobot) {
-            isRestrictedOrError = true;
-            break;
-          }
-        }
-
         await new Promise((r) => setTimeout(r, 1000));
-      }
-
-      if (isRestrictedOrError) {
-        try {
-          await page.screenshot({ path: proofPath });
-        } catch (e) {}
-        websocket.broadcast('log', {
-          level: 'WARN',
-          message: `?? Akun @${username} membatasi DM (TikTok menampilkan 'Something went wrong'). Akun ini hanya menerima pesan dari mutual follow / Friends.`
-        });
-        return {
-          status: 'dm_closed',
-          message_sent: message,
-          proof_path: relProofPath,
-          error_detail: 'DM dibatasi oleh privasi akun target (Something went wrong / Friends only)'
-        };
       }
 
       if (!inputBox) {
@@ -436,12 +402,17 @@ class TikTokService {
           status: 'failed',
           message_sent: message,
           proof_path: relProofPath,
-          error_detail: 'Kolom input obrolan tidak ditemukan atau gagal terbuka'
+          error_detail: 'Kolom input obrolan tidak ditemukan atau gagal terbuka (koneksi lambat / timeout)'
         };
       }
 
-      await inputBox.click();
-      await new Promise((r) => setTimeout(r, 400));
+      const inputCoords = await inputBox.boundingBox().catch(() => null);
+      if (inputCoords) {
+        await page.mouse.click(inputCoords.x + 40, inputCoords.y + (inputCoords.height / 2 || 15));
+      } else {
+        await inputBox.click().catch(() => {});
+      }
+      await new Promise((r) => setTimeout(r, 600));
 
       // ⚡ INPUT PESAN MULTI-LINE CERDAS:
       // Di TikTok Web, 'Enter' biasa langsung MENGIRIM pesan.

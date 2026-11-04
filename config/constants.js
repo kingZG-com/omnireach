@@ -11,6 +11,7 @@ module.exports = {
     MESSAGE_BUTTONS: [
       "a[href*='/messages'][href*='u=']",
       "a[href*='messages?'][href*='u=']",
+      "button[data-e2e='message-button']",
       "a:has-text('Pesan')",
       "button:has-text('Pesan')",
       "div[role='button']:has-text('Pesan')",
@@ -22,6 +23,9 @@ module.exports = {
       "a[data-e2e='user-message-btn']"
     ],
     CHAT_INPUTS: [
+      "div[data-e2e='dm-new-input-editor']",
+      "div[class*='DivInputAreaContainer']",
+      "div[class*='DivEditorContainer']",
       "div[contenteditable='true']",
       "div[data-e2e='message-input-area']",
       "div[data-e2e='chat-input']",
@@ -33,10 +37,12 @@ module.exports = {
     ],
     SEND_BUTTONS: [
       "button[data-e2e='message-send-btn']",
+      "div[class*='DivSendButton']",
+      "svg[data-icon='send']",
       "button:has-text('Send')",
       "button:has-text('Kirim')",
-      "svg[data-icon='send']",
-      "div[data-e2e='message-send-btn']"
+      "div[data-e2e='message-send-btn']",
+      "[data-e2e*='send']"
     ],
     LOGIN_MODALS: [
       '#loginContainer',
@@ -52,4 +58,3 @@ module.exports = {
     ]
   }
 };
-
