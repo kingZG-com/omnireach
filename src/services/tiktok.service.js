@@ -243,63 +243,94 @@ class TikTokService {
         };
       }
 
-      // Cari elemen tombol Pesan / Message
-      const searchMsgStart = Date.now();
-      while (Date.now() - searchMsgStart < 8000) {
-        for (const sel of SELECTORS.MESSAGE_BUTTONS) {
-          try {
-            const els = await page.$$(sel);
-            for (const el of els) {
-              if (el && (await el.isVisible())) {
-                const href = await el.getAttribute('href').catch(() => null);
-                if (
-                  !href ||
-                  href.includes('u=') ||
-                  sel.includes('has-text') ||
-                  sel.includes('user-message-btn')
-                ) {
-                  messageBtn = el;
-                  if (href && href.includes('u=')) targetMessageHref = href;
-                  break;
-                }
-              }
-            }
-            if (messageBtn) break;
-          } catch (e) {}
-        }
-        if (messageBtn) break;
-
-        const domInfo = await page
-          .evaluate(() => {
-            const links = Array.from(document.querySelectorAll('a[href*="messages"]'));
-            for (const a of links) {
-              const h = a.getAttribute('href') || '';
-              if (h.includes('u=')) return { href: h, text: (a.innerText || '').trim() };
-            }
-            const allEls = Array.from(document.querySelectorAll('a, button, div[role="button"]'));
-            for (const el of allEls) {
-              const txt = (el.innerText || '').trim();
-              if (txt === 'Pesan' || txt === 'Message') {
-                return { href: el.getAttribute('href') || '', text: txt };
-              }
-            }
-            return null;
-          })
-          .catch(() => null);
-
-        if (domInfo && domInfo.href) {
-          targetMessageHref = domInfo.href;
-          try {
-            const foundEl = await page.$(
-              `a[href*='${domInfo.href.split('?')[0]}'][href*='u=']`
-            );
-            if (foundEl && (await foundEl.isVisible())) {
-              messageBtn = foundEl;
+            // ? 1. AUTO-FOLLOW TARGET SEBELUM DM (Mencegah DM Dibatasi / Menjamin Room Chat Terbuka)
+      try {
+        let followBtn = null;
+        const candidateFollows = await page.$('button[data-e2e="follow-button"], button');
+        for (const btn of candidateFollows) {
+          if (!(await btn.isVisible().catch(() => false))) continue;
+          const txt = (await btn.innerText().catch(() => '')).trim();
+          if (
+            txt === 'Follow' ||
+            txt === 'Follow back' ||
+            txt === 'Ikuti' ||
+            txt === 'Ikuti balik' ||
+            txt.toLowerCase() === 'follow' ||
+            txt.toLowerCase() === 'follow back' ||
+            txt.toLowerCase() === 'ikuti' ||
+            txt.toLowerCase() === 'ikuti balik'
+          ) {
+            const box = await btn.boundingBox().catch(() => null);
+            // Tombol follow di profil target selalu berada di area konten utama (x > 180, y < 400)
+            if (box && box.x > 180 && box.y < 400) {
+              followBtn = btn;
               break;
             }
-          } catch (e) {}
+          }
         }
 
+        if (followBtn) {
+          websocket.broadcast('log', {
+            level: 'INFO',
+            message: `Mem-follow akun target @${username} terlebih dahulu sebelum mengirim DM...`
+          });
+          await followBtn.click().catch(() => {});
+          await new Promise((r) => setTimeout(r, 2000));
+          websocket.broadcast('log', {
+            level: 'SUCCESS',
+            message: `Berhasil mem-follow @${username}! Melanjutkan proses DM...`
+          });
+        } else {
+          websocket.broadcast('log', {
+            level: 'INFO',
+            message: `Status follow @${username}: Sudah di-follow atau status Friends.`
+          });
+        }
+      } catch (fErr) {
+        websocket.broadcast('log', {
+          level: 'WARN',
+          message: `Catatan auto-follow @${username}: ${fErr.message}`
+        });
+      }
+
+      // ? 2. CARI DAN KLIK TOMBOL MESSAGE PROFIL (PASTIKAN BUKAN NAVBAR KIRI x < 180)
+      messageBtn = null;
+      const searchMsgStart = Date.now();
+      while (Date.now() - searchMsgStart < 10000) {
+        // Prioritas 1: link atau button profil dengan href messages?u= atau data-e2e
+        try {
+          const directProfileMsg = await page.$('a[href*="/messages?"][href*="u="], a[href*="/messages"][href*="u="], button[data-e2e="message-button"], [data-e2e="user-message-btn"]');
+          if (directProfileMsg && (await directProfileMsg.isVisible())) {
+            const box = await directProfileMsg.boundingBox().catch(() => null);
+            if (box && box.x > 180 && box.y < 400) {
+              messageBtn = directProfileMsg;
+              const href = await directProfileMsg.getAttribute('href').catch(() => null);
+              if (href && href.includes('u=')) targetMessageHref = href;
+              break;
+            }
+          }
+        } catch (e) {}
+
+        // Prioritas 2: scan semua button/link di area profil target (x > 180, y < 400) dengan teks 'Message' atau 'Pesan'
+        try {
+          const allCandidates = await page.$('a, button, div[role="button"]');
+          for (const el of allCandidates) {
+            if (!(await el.isVisible().catch(() => false))) continue;
+            const txt = (await el.innerText().catch(() => '')).trim();
+            if (txt === 'Message' || txt === 'Pesan' || txt.toLowerCase() === 'message' || txt.toLowerCase() === 'pesan') {
+              const box = await el.boundingBox().catch(() => null);
+              // WAJIB x > 180 agar TIDAK mengklik tombol navbar di samping kiri (x: 16)
+              if (box && box.x > 180 && box.y < 400) {
+                messageBtn = el;
+                const href = await el.getAttribute('href').catch(() => null);
+                if (href && href.includes('u=')) targetMessageHref = href;
+                break;
+              }
+            }
+          }
+        } catch (e) {}
+
+        if (messageBtn) break;
         await new Promise((r) => setTimeout(r, 1000));
       }
 
@@ -325,22 +356,26 @@ class TikTokService {
       });
 
       if (messageBtn) {
+        websocket.broadcast('log', {
+          level: 'INFO',
+          message: `Mengklik tombol Message profil @${username}...`
+        });
         await messageBtn.click().catch(() => {});
       }
 
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 2500));
 
-      // Jika URL belum berpindah ke /messages dan endpoint href tersedia
-      if (!page.url().includes('/messages') && targetMessageHref) {
+      // Jika URL belum berpindah ke room chat dan endpoint href tersedia
+      if (!page.url().includes('u=') && targetMessageHref) {
         const fullMsgUrl = targetMessageHref.startsWith('http')
           ? targetMessageHref
           : `https://www.tiktok.com${targetMessageHref.startsWith('/') ? '' : '/'}${targetMessageHref}`;
         websocket.broadcast('log', {
           level: 'INFO',
-          message: `Membuka langsung link endpoint pesan: ${fullMsgUrl}...`
+          message: `Membuka langsung link endpoint chat: ${fullMsgUrl}...`
         });
         await page.goto(fullMsgUrl, { waitUntil: 'domcontentloaded', timeout: 35000 }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 2500));
       }
 
       const loginAfterMsgClick = await page
@@ -353,7 +388,7 @@ class TikTokService {
         websocket.broadcast('log', {
           level: 'ERROR',
           message:
-            '❌ TikTok meminta login saat membuka tombol obrolan. Silakan login kembali melalui tombol "Login / Ganti Akun" di sidebar.'
+            '? TikTok meminta login saat membuka tombol obrolan. Silakan login kembali melalui tombol "Login / Ganti Akun" di sidebar.'
         });
         return {
           status: 'failed',
@@ -363,7 +398,7 @@ class TikTokService {
         };
       }
 
-      // Cari kolom input chat
+      // Cari kolom input chat (pastikan bukan search box)
       let inputBox = null;
       const waitInputStart = Date.now();
       while (Date.now() - waitInputStart < 15000) {
@@ -371,8 +406,16 @@ class TikTokService {
           try {
             const el = await page.$(sel);
             if (el && (await el.isVisible())) {
-              inputBox = el;
-              break;
+              const dataE2e = (await el.getAttribute('data-e2e').catch(() => '')) || '';
+              const placeholder = (await el.getAttribute('placeholder').catch(() => '')) || '';
+              if (dataE2e === 'search-user-input' || placeholder.toLowerCase() === 'search') {
+                continue;
+              }
+              const box = await el.boundingBox().catch(() => null);
+              if (box && box.y > 250) {
+                inputBox = el;
+                break;
+              }
             }
           } catch (e) {}
         }
