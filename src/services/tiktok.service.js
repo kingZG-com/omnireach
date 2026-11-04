@@ -334,6 +334,26 @@ class TikTokService {
         }
         if (inputBox) break;
 
+        // Jika berada di halaman messages dan kolom input belum muncul:
+        // Cek apakah ada percakapan target di sidebar kiri (misalnya akun yang sudah pernah dichat sebelumnya)
+        if (page.url().includes('/messages')) {
+          try {
+            const sideItems = await page.$$('div[data-e2e="chat-item"], div[class*="ConversationItem"], div[class*="DivConversationItem"], li, div[role="listitem"]');
+            for (const item of sideItems) {
+              const itemText = (await item.innerText().catch(() => '')).toLowerCase();
+              const cleanUser = username.toLowerCase();
+              if (itemText && (itemText.includes(cleanUser) || cleanUser.includes(itemText.split('\n')[0].toLowerCase()))) {
+                const b = await item.boundingBox().catch(() => null);
+                if (b && b.x < 450 && b.y > 60) {
+                  await item.click().catch(() => {});
+                  await new Promise((r) => setTimeout(r, 1500));
+                  break;
+                }
+              }
+            }
+          } catch (e) {}
+        }
+
         await new Promise((r) => setTimeout(r, 1000));
       }
 
