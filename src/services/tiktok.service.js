@@ -243,30 +243,55 @@ class TikTokService {
         };
       }
 
-            // ? 1. AUTO-FOLLOW TARGET SEBELUM DM (Mencegah DM Dibatasi / Menjamin Room Chat Terbuka)
+            // 🎯 1. AUTO-FOLLOW TARGET SEBELUM DM (Wajib Follow Terlebih Dahulu Sebelum DM)
       try {
         let followBtn = null;
-        const candidateFollows = await page.$('button[data-e2e="follow-button"], button');
-        for (const btn of candidateFollows) {
-          if (!(await btn.isVisible().catch(() => false))) continue;
-          const txt = (await btn.innerText().catch(() => '')).trim();
-          if (
-            txt === 'Follow' ||
-            txt === 'Follow back' ||
-            txt === 'Ikuti' ||
-            txt === 'Ikuti balik' ||
-            txt.toLowerCase() === 'follow' ||
-            txt.toLowerCase() === 'follow back' ||
-            txt.toLowerCase() === 'ikuti' ||
-            txt.toLowerCase() === 'ikuti balik'
-          ) {
-            const box = await btn.boundingBox().catch(() => null);
-            // Tombol follow di profil target selalu berada di area konten utama (x > 180, y < 400)
-            if (box && box.x > 180 && box.y < 400) {
-              followBtn = btn;
+        let isAlreadyFollowing = false;
+
+        const followSearchStart = Date.now();
+        while (Date.now() - followSearchStart < 6000) {
+          // Prioritas 1: Selector resmi data-e2e="follow-button" di profil
+          const directFollow = await page.$('button[data-e2e="follow-button"]');
+          if (directFollow && (await directFollow.isVisible().catch(() => false))) {
+            const txt = (await directFollow.innerText().catch(() => '')).trim();
+            const lower = txt.toLowerCase();
+            if (
+              ['follow', 'follow back', 'ikuti', 'ikuti balik'].includes(lower)
+            ) {
+              followBtn = directFollow;
+              break;
+            } else if (
+              ['following', 'mengikuti', 'friends', 'teman'].includes(lower)
+            ) {
+              isAlreadyFollowing = true;
               break;
             }
           }
+
+          // Prioritas 2: Fallback scan semua tombol di area profil utama (x > 180, y < 400)
+          const allBtns = await page.$$('button, div[role="button"]');
+          for (const btn of allBtns) {
+            if (!(await btn.isVisible().catch(() => false))) continue;
+            const txt = (await btn.innerText().catch(() => '')).trim();
+            const lower = txt.toLowerCase();
+            const box = await btn.boundingBox().catch(() => null);
+            if (box && box.x > 180 && box.y < 400) {
+              if (
+                ['follow', 'follow back', 'ikuti', 'ikuti balik'].includes(lower)
+              ) {
+                followBtn = btn;
+                break;
+              } else if (
+                ['following', 'mengikuti', 'friends', 'teman'].includes(lower)
+              ) {
+                isAlreadyFollowing = true;
+                break;
+              }
+            }
+          }
+
+          if (followBtn || isAlreadyFollowing) break;
+          await new Promise((r) => setTimeout(r, 800));
         }
 
         if (followBtn) {
@@ -280,10 +305,15 @@ class TikTokService {
             level: 'SUCCESS',
             message: `Berhasil mem-follow @${username}! Melanjutkan proses DM...`
           });
+        } else if (isAlreadyFollowing) {
+          websocket.broadcast('log', {
+            level: 'INFO',
+            message: `Status follow @${username}: Sudah di-follow (Following / Friends).`
+          });
         } else {
           websocket.broadcast('log', {
             level: 'INFO',
-            message: `Status follow @${username}: Sudah di-follow atau status Friends.`
+            message: `Info @${username}: Tombol follow tidak ditemukan atau sudah ter-follow.`
           });
         }
       } catch (fErr) {
@@ -293,7 +323,7 @@ class TikTokService {
         });
       }
 
-      // ? 2. CARI DAN KLIK TOMBOL MESSAGE PROFIL (PASTIKAN BUKAN NAVBAR KIRI x < 180)
+      // 🎯 2. CARI DAN KLIK TOMBOL MESSAGE PROFIL (PASTIKAN BUKAN NAVBAR KIRI x < 180)
       messageBtn = null;
       const searchMsgStart = Date.now();
       while (Date.now() - searchMsgStart < 10000) {
@@ -313,7 +343,7 @@ class TikTokService {
 
         // Prioritas 2: scan semua button/link di area profil target (x > 180, y < 400) dengan teks 'Message' atau 'Pesan'
         try {
-          const allCandidates = await page.$('a, button, div[role="button"]');
+          const allCandidates = await page.$$('a, button, div[role="button"]');
           for (const el of allCandidates) {
             if (!(await el.isVisible().catch(() => false))) continue;
             const txt = (await el.innerText().catch(() => '')).trim();
@@ -398,10 +428,22 @@ class TikTokService {
         };
       }
 
-      // Cari kolom input chat (pastikan bukan search box)
+      // Cari kolom input chat (pastikan bukan search box dan cek apakah muncul error robot)
       let inputBox = null;
+      let isRestrictedOrError = false;
       const waitInputStart = Date.now();
       while (Date.now() - waitInputStart < 15000) {
+        // Cek cepat apakah TikTok menampilkan robot 'Something went wrong'
+        const hasErrorRobot = await page.evaluate(() => {
+          const text = document.body ? document.body.innerText : '';
+          return text.includes('Something went wrong') || text.includes('Sorry about that');
+        }).catch(() => false);
+
+        if (hasErrorRobot) {
+          isRestrictedOrError = true;
+          break;
+        }
+
         for (const sel of SELECTORS.CHAT_INPUTS) {
           try {
             const el = await page.$(sel);
@@ -421,6 +463,22 @@ class TikTokService {
         }
         if (inputBox) break;
         await new Promise((r) => setTimeout(r, 1000));
+      }
+
+      if (isRestrictedOrError) {
+        try {
+          await page.screenshot({ path: proofPath });
+        } catch (e) {}
+        websocket.broadcast('log', {
+          level: 'WARN',
+          message: `?? Akun @${username} membatasi DM (TikTok menampilkan 'Something went wrong'). Akun ini hanya menerima pesan dari mutual follow / Friends.`
+        });
+        return {
+          status: 'dm_closed',
+          message_sent: message,
+          proof_path: relProofPath,
+          error_detail: 'DM dibatasi oleh privasi akun target (Something went wrong / Friends only)'
+        };
       }
 
       if (!inputBox) {
