@@ -137,7 +137,7 @@ class BotService {
         page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
 
         // ⚡ Turbo Engine Routing
-        await applyTurboRouting(context);
+        // await applyTurboRouting(context);
 
         // Verifikasi sesi login
         const currentCookies = await context.cookies('https://www.tiktok.com');

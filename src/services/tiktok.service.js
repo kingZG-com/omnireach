@@ -160,41 +160,7 @@ class TikTokService {
           break;
         }
 
-        // ⚡ Ekstraksi Instan User ID Target dari Metadata Internal TikTok (Anti-Lag / Anti-Skeleton)
-        const targetUserId = await page
-          .evaluate(() => {
-            try {
-              const script = document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__');
-              if (script) {
-                const data = JSON.parse(script.textContent);
-                const userDetail = data?.['__DEFAULT_SCOPE__']?.['webapp.user-detail']?.userInfo?.user;
-                if (userDetail && userDetail.id) return userDetail.id;
-              }
-            } catch (e) {}
-
-            try {
-              if (window.SIGI_STATE && window.SIGI_STATE.UserModule) {
-                const users = window.SIGI_STATE.UserModule.users;
-                const first = Object.values(users)[0];
-                if (first && first.id) return first.id;
-              }
-            } catch (e) {}
-
-            const a = document.querySelector('a[href*="/messages"][href*="u="]');
-            if (a) {
-              const h = a.getAttribute('href') || '';
-              const m = h.match(/u=(\d+)/);
-              if (m) return m[1];
-            }
-            return null;
-          })
-          .catch(() => null);
-
-        if (targetUserId) {
-          targetMessageHref = `https://www.tiktok.com/messages?lang=id-ID&u=${targetUserId}`;
-          profileLoaded = true;
-          break;
-        }
+        // Tunggu profil dan tombol aksi ter-render di halaman profil target
 
         const hasHeader = await page
           .$("h1, h2, [data-e2e='user-title'], [data-e2e='user-subtitle']")
@@ -261,84 +227,58 @@ class TikTokService {
         };
       }
 
-      // 🎯 CARI TOMBOL MESSAGE / PESAN DI PROFIL TARGET (UNTUK DIKLIK SECARA ALAMI)
+      // 🎯 CARI TOMBOL MESSAGE / PESAN DI SEBELAH TOMBOL FOLLOW DI PROFIL TARGET (ALUR NATURAL SEPERTI HUMAN)
       messageBtn = null;
       const searchMsgStart = Date.now();
-      while (Date.now() - searchMsgStart < 60000) {
-        // Prioritas 1: Button / Link resmi profil target
+      while (Date.now() - searchMsgStart < 120000) {
+        // Prioritas 1: Button / Link resmi profil target (sebelah tombol Follow)
         try {
-          const directProfileMsg = await page.$('button[data-e2e="message-button"], a[href*="/messages?"][href*="u="], a[href*="/messages"][href*="u="], [data-e2e="user-message-btn"]');
+          const directProfileMsg = await page.$(
+            'button[data-e2e="message-button"], a[href*="/messages"], button:has-text("Message"), button:has-text("Pesan"), a:has-text("Message"), a:has-text("Pesan"), div[role="button"]:has-text("Message"), div[role="button"]:has-text("Pesan")'
+          );
           if (directProfileMsg && (await directProfileMsg.isVisible())) {
             const box = await directProfileMsg.boundingBox().catch(() => null);
+            // Pastikan elemen berada di area profil target (bukan di navbar kiri x < 150)
             if (box && box.x > 180 && box.y < 450) {
               messageBtn = directProfileMsg;
-              const href = await directProfileMsg.getAttribute('href').catch(() => null);
-              if (href && href.includes('u=')) targetMessageHref = href;
               break;
             }
           }
         } catch (e) {}
 
-        // Prioritas 2: Scan tombol dengan teks 'Message' atau 'Pesan' di area profil target (x > 180, y < 450)
-        try {
-          const allCandidates = await page.$$('a, button, div[role="button"]');
-          for (const el of allCandidates) {
-            if (!(await el.isVisible().catch(() => false))) continue;
-            const txt = (await el.innerText().catch(() => '')).trim();
-            if (txt === 'Message' || txt === 'Pesan' || txt.toLowerCase() === 'message' || txt.toLowerCase() === 'pesan') {
-              const box = await el.boundingBox().catch(() => null);
-              if (box && box.x > 180 && box.y < 450) {
-                messageBtn = el;
-                const href = await el.getAttribute('href').catch(() => null);
-                if (href && href.includes('u=')) targetMessageHref = href;
-                break;
-              }
-            }
-          }
-        } catch (e) {}
-
         if (messageBtn) break;
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 1000));
       }
 
-      if (!messageBtn && !targetMessageHref) {
+      if (!messageBtn) {
         try {
           await page.screenshot({ path: proofPath });
         } catch (e) {}
         websocket.broadcast('log', {
           level: 'WARN',
-          message: `Akun @${username} menutup DM atau hanya untuk teman / mutual follow.`
+          message: `Akun @${username} tidak memiliki tombol Pesan (DM ditutup / hanya teman yang bisa mengirim pesan).`
         });
         return {
           status: 'dm_closed',
           message_sent: message,
           proof_path: relProofPath,
-          error_detail: 'DM ditutup / Hanya teman yang bisa mengirim pesan'
+          error_detail: 'DM ditutup / Tombol pesan tidak tersedia di profil'
         };
       }
 
       websocket.broadcast('log', {
         level: 'INFO',
-        message: `Membuka obrolan dengan @${username}...`
+        message: `Mengklik tombol Pesan di samping tombol Follow @${username} (seperti manusia)...`
       });
 
-      // Prioritas 1: KLIK tombol pesan profil secara alami (memicu event conversation/create bawaan TikTok)
-      if (messageBtn) {
-        websocket.broadcast('log', {
-          level: 'INFO',
-          message: `Mengklik tombol Pesan di profil @${username} (alur alami browser)...`
-        });
+      // Gerakkan kursor ke tombol Pesan dan klik secara alami
+      const btnBox = await messageBtn.boundingBox().catch(() => null);
+      if (btnBox) {
+        await page.mouse.move(btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
+        await new Promise((r) => setTimeout(r, 300));
+        await page.mouse.click(btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
+      } else {
         await messageBtn.click().catch(() => {});
-      } else if (targetMessageHref) {
-        // Fallback: Jika tombol fisik tidak tertangkap tapi endpoint URL didapat dari metadata
-        const fullMsgUrl = targetMessageHref.startsWith('http')
-          ? targetMessageHref
-          : `https://www.tiktok.com${targetMessageHref.startsWith('/') ? '' : '/'}${targetMessageHref}`;
-        websocket.broadcast('log', {
-          level: 'INFO',
-          message: `Membuka link endpoint chat langsung: ${fullMsgUrl}...`
-        });
-        await page.goto(fullMsgUrl, { waitUntil: 'domcontentloaded', timeout: 180000 }).catch(() => {});
       }
 
       await new Promise((r) => setTimeout(r, 2000));
@@ -382,7 +322,8 @@ class TikTokService {
                 continue;
               }
               const box = await el.boundingBox().catch(() => null);
-              if (box && (box.height > 15 || box.width > 50)) {
+              // Pastikan kolom input sudah benar-benar ter-mount dengan tinggi minimal 20px
+              if (box && box.height >= 20 && box.width >= 100) {
                 inputBox = el;
                 break;
               }
