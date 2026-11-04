@@ -233,15 +233,17 @@ class TikTokService {
       while (Date.now() - searchMsgStart < 120000) {
         // Prioritas 1: Button / Link resmi profil target (sebelah tombol Follow)
         try {
-          const directProfileMsg = await page.$(
+          const allMsgCandidates = await page.$$(
             'button[data-e2e="message-button"], a[href*="/messages"], button:has-text("Message"), button:has-text("Pesan"), a:has-text("Message"), a:has-text("Pesan"), div[role="button"]:has-text("Message"), div[role="button"]:has-text("Pesan")'
           );
-          if (directProfileMsg && (await directProfileMsg.isVisible())) {
-            const box = await directProfileMsg.boundingBox().catch(() => null);
-            // Pastikan elemen berada di area profil target (bukan di navbar kiri x < 150)
-            if (box && box.x > 180 && box.y < 450) {
-              messageBtn = directProfileMsg;
-              break;
+          for (const cand of allMsgCandidates) {
+            if (await cand.isVisible().catch(() => false)) {
+              const box = await cand.boundingBox().catch(() => null);
+              // Pastikan elemen berada di area profil target (bukan di navbar kiri x < 150)
+              if (box && box.x > 180 && box.y < 450) {
+                messageBtn = cand;
+                break;
+              }
             }
           }
         } catch (e) {}
