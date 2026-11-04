@@ -1,6 +1,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { PROFILE_DIR, COOKIES_FILE } = require('../../config/paths');
 const { USER_AGENT, CHANNELS } = require('../../config/constants');
 
