@@ -422,7 +422,7 @@ class TikTokService {
       const textCheck = await page.evaluate(() => {
         const active = document.activeElement;
         return (active ? (active.innerText || active.value || '') : '').trim();
-      });
+      }).catch(() => '');
 
       // 2. Kirim pesan (Tekan tombol send atau Enter)
       let sentClicked = false;
@@ -454,40 +454,52 @@ class TikTokService {
       const verifyStart = Date.now();
 
       while (Date.now() - verifyStart < 15000) {
-        const checkResult = await page.evaluate((snippet) => {
-          // Cek teks di seluruh body (khususnya area percakapan di sebelah kanan)
-          const bodyText = (document.body ? document.body.innerText : '').toLowerCase();
-          const hasSnippet = bodyText.includes(snippet);
+        if (page.isClosed()) break;
 
-          // Cek isi kotak input saat ini
-          const inputEl = document.querySelector('div[contenteditable="true"], textarea, [data-e2e="dm-new-input-editor"]');
-          const currentInputText = inputEl ? (inputEl.innerText || inputEl.value || '').trim() : '';
+        let checkResult = null;
+        try {
+          checkResult = await page.evaluate((snippet) => {
+            if (!document || !document.body) return null;
+            const bodyText = (document.body.innerText || '').toLowerCase();
+            const hasSnippet = bodyText.includes(snippet);
 
-          // Cek apakah ada robot error
-          const hasError = bodyText.includes('something went wrong') || bodyText.includes('ada masalah');
+            // Cek isi kotak input saat ini
+            const inputEl = document.querySelector('div[contenteditable="true"], textarea, [data-e2e="dm-new-input-editor"]');
+            const currentInputText = inputEl ? (inputEl.innerText || inputEl.value || '').trim() : '';
 
-          return {
-            hasSnippet,
-            isInputCleared: currentInputText.length === 0,
-            hasError
-          };
-        }, cleanSnippet);
+            // Cek apakah ada robot error
+            const hasError = bodyText.includes('something went wrong') || bodyText.includes('ada masalah');
 
-        if (!checkResult.hasError && (checkResult.hasSnippet || checkResult.isInputCleared)) {
+            return {
+              hasSnippet,
+              isInputCleared: currentInputText.length === 0,
+              hasError
+            };
+          }, cleanSnippet);
+        } catch (e) {
+          // Abaikan error transient navigasi saat halaman sedang berpindah / render ulang
+          checkResult = null;
+        }
+
+        if (checkResult && !checkResult.hasError && (checkResult.hasSnippet || checkResult.isInputCleared)) {
           isMessageConfirmedSent = true;
           break;
         }
 
         // Coba tekan Enter sekali lagi di detik ke-5 jika pesan masih tertahan
         if (Date.now() - verifyStart > 5000 && !isMessageConfirmedSent) {
-          await page.keyboard.press('Enter').catch(() => {});
+          try {
+            if (!page.isClosed()) await page.keyboard.press('Enter');
+          } catch (e) {}
         }
 
         await new Promise((r) => setTimeout(r, 1500));
       }
 
       try {
-        await page.screenshot({ path: proofPath });
+        if (!page.isClosed()) {
+          await page.screenshot({ path: proofPath });
+        }
       } catch (e) {}
 
       if (!isMessageConfirmedSent) {
