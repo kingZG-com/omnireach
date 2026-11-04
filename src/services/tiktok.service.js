@@ -90,7 +90,7 @@ class TikTokService {
         message: `Membuka profil target: ${targetUrl}...`
       });
 
-      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 120000 });
       await this.dismissOverlays(page);
 
       // Cek apakah halaman dialihkan ke halaman login
@@ -135,7 +135,7 @@ class TikTokService {
       let messageBtn = null;
 
       const waitProfileStart = Date.now();
-      while (Date.now() - waitProfileStart < 20000) {
+      while (Date.now() - waitProfileStart < 90000) {
         await this.checkAndHandleCaptcha(page, autoSolveCaptcha);
         await this.dismissOverlays(page);
 
@@ -264,7 +264,7 @@ class TikTokService {
       // 🎯 CARI TOMBOL MESSAGE / PESAN DI PROFIL TARGET (UNTUK DIKLIK SECARA ALAMI)
       messageBtn = null;
       const searchMsgStart = Date.now();
-      while (Date.now() - searchMsgStart < 15000) {
+      while (Date.now() - searchMsgStart < 60000) {
         // Prioritas 1: Button / Link resmi profil target
         try {
           const directProfileMsg = await page.$('button[data-e2e="message-button"], a[href*="/messages?"][href*="u="], a[href*="/messages"][href*="u="], [data-e2e="user-message-btn"]');
@@ -338,7 +338,7 @@ class TikTokService {
           level: 'INFO',
           message: `Membuka link endpoint chat langsung: ${fullMsgUrl}...`
         });
-        await page.goto(fullMsgUrl, { waitUntil: 'domcontentloaded', timeout: 35000 }).catch(() => {});
+        await page.goto(fullMsgUrl, { waitUntil: 'domcontentloaded', timeout: 120000 }).catch(() => {});
       }
 
       await new Promise((r) => setTimeout(r, 2000));
@@ -367,7 +367,7 @@ class TikTokService {
       let inputBox = null;
       let isRestrictedOrError = false;
       const waitInputStart = Date.now();
-      while (Date.now() - waitInputStart < 20000) {
+      while (Date.now() - waitInputStart < 90000) {
         for (const sel of SELECTORS.CHAT_INPUTS) {
           try {
             const el = await page.$(sel);
@@ -392,7 +392,7 @@ class TikTokService {
         if (inputBox) break;
 
         // Cek jika TikTok menampilkan robot error setelah minimal 8 detik (bilingual: Inggris & Indonesia)
-        if (Date.now() - waitInputStart > 8000) {
+        if (Date.now() - waitInputStart > 30000) {
           const hasErrorRobot = await page.evaluate(() => {
             const text = document.body ? document.body.innerText : '';
             return (

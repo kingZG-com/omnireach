@@ -1,3 +1,5 @@
-2026/10/31-12:09:31.126 92c Reusing MANIFEST D:\Coding\Outreach_automation\browser_profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/10/31-12:09:31.128 92c Recovering log #13
-2026/10/31-12:09:31.132 92c Reusing old log D:\Coding\Outreach_automation\browser_profile\Default\Local Storage\leveldb/000013.log 
+2026/11/04-14:10:46.146 6e8 Reusing MANIFEST D:\Coding\Outreach_automation\browser_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/11/04-14:10:46.148 6e8 Recovering log #18
+2026/11/04-14:10:46.148 6e8 Level-0 table #21: started
+2026/11/04-14:10:46.157 6e8 Level-0 table #21: 42346 bytes OK
+2026/11/04-14:10:46.163 6e8 Delete type=0 #18

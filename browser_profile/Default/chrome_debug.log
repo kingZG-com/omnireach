@@ -1,0 +1,15 @@
+[1104/142556.877:WARNING:content\browser\btm\btm_database.cc:129] Failed to initialize the BTM SQLite database.
+[1104/142556.883:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)
+[1104/142556.886:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)
+[1104/142556.886:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)
+[1104/142556.886:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1104/142556.886:ERROR:gpu\ipc\host\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2
+[1104/142556.886:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1104/142556.886:ERROR:gpu\ipc\host\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2
+[1104/142556.904:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1104/142556.904:ERROR:gpu\ipc\host\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2
+[1104/142558.912:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open d:\Coding\Outreach_automation\browser_profile\Default\shared_proto_db\metadata: IO error: d:\Coding\Outreach_automation\browser_profile\Default\shared_proto_db\metadata/LOCK: Access denied. (ChromeMethodBFE: 15::LockFile::5)
+[1104/142559.897:ERROR:components\services\storage\service_worker\service_worker_storage.cc:1814] Failed to delete the database: Database IO error
+[1104/142600.934:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open d:\Coding\Outreach_automation\browser_profile\Default\shared_proto_db\metadata: IO error: d:\Coding\Outreach_automation\browser_profile\Default\shared_proto_db\metadata/LOCK: Access denied. (ChromeMethodBFE: 15::LockFile::5)
+[1104/142602.953:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open d:\Coding\Outreach_automation\browser_profile\Default\shared_proto_db\metadata: IO error: d:\Coding\Outreach_automation\browser_profile\Default\shared_proto_db\metadata/LOCK: Access denied. (ChromeMethodBFE: 15::LockFile::5)
+[1104/142604.973:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open d:\Coding\Outreach_automation\browser_profile\Default\shared_proto_db\metadata: IO error: d:\Coding\Outreach_automation\browser_profile\Default\shared_proto_db\metadata/LOCK: Access denied. (ChromeMethodBFE: 15::LockFile::5)
