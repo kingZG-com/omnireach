@@ -6,6 +6,15 @@ const { PROFILE_DIR, COOKIES_FILE } = require('../../config/paths');
 const { USER_AGENT, CHANNELS } = require('../../config/constants');
 
 function cleanLocks() {
+  if (process.platform === 'win32') {
+    try {
+      execSync(
+        'powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like \'*browser_profile*\' -and ($_.Name -like \'*chrome*\' -or $_.Name -like \'*edge*\') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"',
+        { stdio: 'ignore', timeout: 4000 }
+      );
+    } catch (e) {}
+  }
+
   if (fs.existsSync(PROFILE_DIR)) {
     const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile'];
     for (const fname of lockFiles) {
