@@ -261,17 +261,16 @@ class TikTokService {
         };
       }
 
-      // 🎯 CARI DAN KLIK TOMBOL MESSAGE PROFIL (JIKA BELUM DAPAT DIRECT URL DARI METADATA)
+      // 🎯 CARI TOMBOL MESSAGE / PESAN DI PROFIL TARGET (UNTUK DIKLIK SECARA ALAMI)
       messageBtn = null;
-      if (!targetMessageHref) {
-        const searchMsgStart = Date.now();
-        while (Date.now() - searchMsgStart < 15000) {
-        // Prioritas 1: link atau button profil dengan href messages?u= atau data-e2e
+      const searchMsgStart = Date.now();
+      while (Date.now() - searchMsgStart < 15000) {
+        // Prioritas 1: Button / Link resmi profil target
         try {
-          const directProfileMsg = await page.$('a[href*="/messages?"][href*="u="], a[href*="/messages"][href*="u="], button[data-e2e="message-button"], [data-e2e="user-message-btn"]');
+          const directProfileMsg = await page.$('button[data-e2e="message-button"], a[href*="/messages?"][href*="u="], a[href*="/messages"][href*="u="], [data-e2e="user-message-btn"]');
           if (directProfileMsg && (await directProfileMsg.isVisible())) {
             const box = await directProfileMsg.boundingBox().catch(() => null);
-            if (box && box.x > 180 && box.y < 400) {
+            if (box && box.x > 180 && box.y < 450) {
               messageBtn = directProfileMsg;
               const href = await directProfileMsg.getAttribute('href').catch(() => null);
               if (href && href.includes('u=')) targetMessageHref = href;
@@ -280,7 +279,7 @@ class TikTokService {
           }
         } catch (e) {}
 
-        // Prioritas 2: scan semua button/link di area profil target (x > 180, y < 400) dengan teks 'Message' atau 'Pesan'
+        // Prioritas 2: Scan tombol dengan teks 'Message' atau 'Pesan' di area profil target (x > 180, y < 450)
         try {
           const allCandidates = await page.$$('a, button, div[role="button"]');
           for (const el of allCandidates) {
@@ -288,8 +287,7 @@ class TikTokService {
             const txt = (await el.innerText().catch(() => '')).trim();
             if (txt === 'Message' || txt === 'Pesan' || txt.toLowerCase() === 'message' || txt.toLowerCase() === 'pesan') {
               const box = await el.boundingBox().catch(() => null);
-              // WAJIB x > 180 agar TIDAK mengklik tombol navbar di samping kiri (x: 16)
-              if (box && box.x > 180 && box.y < 400) {
+              if (box && box.x > 180 && box.y < 450) {
                 messageBtn = el;
                 const href = await el.getAttribute('href').catch(() => null);
                 if (href && href.includes('u=')) targetMessageHref = href;
@@ -300,8 +298,7 @@ class TikTokService {
         } catch (e) {}
 
         if (messageBtn) break;
-        await new Promise((r) => setTimeout(r, 1000));
-        }
+        await new Promise((r) => setTimeout(r, 800));
       }
 
       if (!messageBtn && !targetMessageHref) {
@@ -325,8 +322,15 @@ class TikTokService {
         message: `Membuka obrolan dengan @${username}...`
       });
 
-      // Jika endpoint direct message (u=...) tersedia, langsung buka room chat secara mulus
-      if (targetMessageHref) {
+      // Prioritas 1: KLIK tombol pesan profil secara alami (memicu event conversation/create bawaan TikTok)
+      if (messageBtn) {
+        websocket.broadcast('log', {
+          level: 'INFO',
+          message: `Mengklik tombol Pesan di profil @${username} (alur alami browser)...`
+        });
+        await messageBtn.click().catch(() => {});
+      } else if (targetMessageHref) {
+        // Fallback: Jika tombol fisik tidak tertangkap tapi endpoint URL didapat dari metadata
         const fullMsgUrl = targetMessageHref.startsWith('http')
           ? targetMessageHref
           : `https://www.tiktok.com${targetMessageHref.startsWith('/') ? '' : '/'}${targetMessageHref}`;
@@ -335,12 +339,6 @@ class TikTokService {
           message: `Membuka link endpoint chat langsung: ${fullMsgUrl}...`
         });
         await page.goto(fullMsgUrl, { waitUntil: 'domcontentloaded', timeout: 35000 }).catch(() => {});
-      } else if (messageBtn) {
-        websocket.broadcast('log', {
-          level: 'INFO',
-          message: `Mengklik tombol Message profil @${username}...`
-        });
-        await messageBtn.click().catch(() => {});
       }
 
       await new Promise((r) => setTimeout(r, 2000));
@@ -393,11 +391,16 @@ class TikTokService {
         }
         if (inputBox) break;
 
-        // Cek jika TikTok menampilkan robot error setelah minimal 6 detik (agar tidak false positive saat loading)
-        if (Date.now() - waitInputStart > 6000) {
+        // Cek jika TikTok menampilkan robot error setelah minimal 8 detik (bilingual: Inggris & Indonesia)
+        if (Date.now() - waitInputStart > 8000) {
           const hasErrorRobot = await page.evaluate(() => {
             const text = document.body ? document.body.innerText : '';
-            return text.includes('Something went wrong') || text.includes('Sorry about that');
+            return (
+              text.includes('Something went wrong') ||
+              text.includes('Sorry about that') ||
+              text.includes('Ada masalah') ||
+              text.includes('Maaf atas hal tersebut')
+            );
           }).catch(() => false);
 
           if (hasErrorRobot) {
