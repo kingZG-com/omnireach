@@ -207,27 +207,27 @@ function initBrowserLogin() {
     });
   }
 
-  const btnLogout = document.getElementById("btn-logout-session");
+  const btnLogout = document.getElementById("btn-logout");
   if (btnLogout) {
     btnLogout.addEventListener("click", async () => {
-      const confirmLogout = confirm("Apakah Anda yakin ingin menghapus sesi TikTok yang tersimpan untuk login akun baru?");
+      const confirmLogout = confirm("Apakah Anda yakin ingin Log Out dari akun TikTok saat ini?");
       if (!confirmLogout) return;
 
       btnLogout.disabled = true;
-      btnLogout.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghapus...';
+      btnLogout.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging out...';
 
       try {
         const res = await fetch("/api/session/logout", { method: "POST" });
         const data = await res.json();
         appendLog("SUCCESS", data.message || "Sesi akun berhasil dihapus.");
-        alert("Sesi akun TikTok berhasil dihapus! Silakan klik tombol 'Login / Ganti Akun' untuk login akun baru.");
+        alert("Anda telah berhasil Log Out dari akun TikTok!");
         checkSessionStatus();
       } catch (err) {
         appendLog("ERROR", "Gagal menghapus sesi: " + err.message);
         alert("Gagal menghapus sesi: " + err.message);
       } finally {
         btnLogout.disabled = false;
-        btnLogout.innerHTML = '<i class="fa-solid fa-trash-can"></i> Hapus Sesi Tersimpan';
+        btnLogout.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Log Out';
       }
     });
   }
@@ -274,7 +274,9 @@ async function checkSessionStatus() {
       if (senderStatus) {
         senderStatus.className = "badge badge-success";
         senderStatus.textContent = "Siap Digunakan";
-      }
+      const btnLog = document.getElementById("btn-logout");
+      if (btnLog) btnLog.style.display = "block";
+    }
     } else {
       dot.className = "pulse-dot";
       label.textContent = "Belum Login TikTok";
@@ -295,7 +297,9 @@ async function checkSessionStatus() {
       if (senderStatus) {
         senderStatus.className = "badge badge-warning";
         senderStatus.textContent = "Perlu Login";
-      }
+      const btnLog = document.getElementById("btn-logout");
+      if (btnLog) btnLog.style.display = "none";
+    }
     }
   } catch (err) {
     label.textContent = "Status Offline";
