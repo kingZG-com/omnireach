@@ -160,20 +160,38 @@ class TikTokService {
           break;
         }
 
-        // ⚡ Optimasi Cepat: Jika link endpoint /messages?u= sudah ada di DOM
-        const quickMsgLink = await page
+        // ⚡ Ekstraksi Instan User ID Target dari Metadata Internal TikTok (Anti-Lag / Anti-Skeleton)
+        const targetUserId = await page
           .evaluate(() => {
-            const links = Array.from(document.querySelectorAll('a[href*="messages"]'));
-            for (const a of links) {
+            try {
+              const script = document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__');
+              if (script) {
+                const data = JSON.parse(script.textContent);
+                const userDetail = data?.['__DEFAULT_SCOPE__']?.['webapp.user-detail']?.userInfo?.user;
+                if (userDetail && userDetail.id) return userDetail.id;
+              }
+            } catch (e) {}
+
+            try {
+              if (window.SIGI_STATE && window.SIGI_STATE.UserModule) {
+                const users = window.SIGI_STATE.UserModule.users;
+                const first = Object.values(users)[0];
+                if (first && first.id) return first.id;
+              }
+            } catch (e) {}
+
+            const a = document.querySelector('a[href*="/messages"][href*="u="]');
+            if (a) {
               const h = a.getAttribute('href') || '';
-              if (h.includes('u=')) return h;
+              const m = h.match(/u=(\d+)/);
+              if (m) return m[1];
             }
             return null;
           })
           .catch(() => null);
 
-        if (quickMsgLink) {
-          targetMessageHref = quickMsgLink;
+        if (targetUserId) {
+          targetMessageHref = `https://www.tiktok.com/messages?lang=id-ID&u=${targetUserId}`;
           profileLoaded = true;
           break;
         }
@@ -243,10 +261,11 @@ class TikTokService {
         };
       }
 
-      // 🎯 CARI DAN KLIK TOMBOL MESSAGE PROFIL (PASTIKAN BUKAN NAVBAR KIRI x < 180)
+      // 🎯 CARI DAN KLIK TOMBOL MESSAGE PROFIL (JIKA BELUM DAPAT DIRECT URL DARI METADATA)
       messageBtn = null;
-      const searchMsgStart = Date.now();
-      while (Date.now() - searchMsgStart < 10000) {
+      if (!targetMessageHref) {
+        const searchMsgStart = Date.now();
+        while (Date.now() - searchMsgStart < 15000) {
         // Prioritas 1: link atau button profil dengan href messages?u= atau data-e2e
         try {
           const directProfileMsg = await page.$('a[href*="/messages?"][href*="u="], a[href*="/messages"][href*="u="], button[data-e2e="message-button"], [data-e2e="user-message-btn"]');
@@ -282,6 +301,7 @@ class TikTokService {
 
         if (messageBtn) break;
         await new Promise((r) => setTimeout(r, 1000));
+        }
       }
 
       if (!messageBtn && !targetMessageHref) {
