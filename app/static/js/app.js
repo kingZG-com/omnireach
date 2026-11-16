@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   checkSessionStatus();
   initFileUploader();
   initLimitControls();
+  initTemplateControls();
   initCampaignActions();
   initResultsPage();
   loadLatestCampaign();
@@ -474,6 +475,118 @@ function updateChipActiveState(currentVal) {
   });
 }
 
+const PACC_TEMPLATE_1000 = `Halo Kak! 👋 Aku Zakaria dari tim Business Development PACC.
+Aku lihat konten kakak punya engagement yang bagus dan audiens lokal yang solid. Kami tertarik ngajak Kakak kolaborasi sebagai Shopee Affiliate PACC karena konten Kakak relevan dengan produk kami.
+🎧 Khusus Kakak jika pengguna iPhone, ada HEADSET GRATIS dari produk yang Kakak promosikan, plus komisi 10–15% dari setiap penjualan.
+Apakah kakak berkenan untuk aku share detail kolaborasinya?😊`;
+
+const PACC_TEMPLATE_200 = `Halo Kak! 👋 Aku Zakaria dari tim Business Development PACC.
+Aku lihat konten kakak punya engagement yang bagus dan audiens lokal yang solid. Kami tertarik ngajak Kakak kolaborasi sebagai Shopee Affiliate PACC karena konten Kakak relevan dengan produk kami.
+🎁 Kakak dapat produk GRATIS (anti-gores / casing / tempered glass) buat dikontenin, plus komisi 10–15% dari setiap penjualan.
+Apakah kakak berkenan untuk aku share detail kolaborasinya?😊`;
+
+function initTemplateControls() {
+  const toggleTiered = document.getElementById("toggle-tiered-template");
+  const tieredWrapper = document.getElementById("tiered-templates-wrapper");
+  const singleWrapper = document.getElementById("single-template-wrapper");
+
+  const txt1000 = document.getElementById("template-tier-1000");
+  const txt200 = document.getElementById("template-tier-200");
+  const txtFallback = document.getElementById("template-tier-fallback");
+  const txtSingle = document.getElementById("message-template");
+
+  // Load presets or cached drafts
+  if (txt1000 && !txt1000.value) {
+    txt1000.value = localStorage.getItem("pacc_tier_1000") || PACC_TEMPLATE_1000;
+  }
+  if (txt200 && !txt200.value) {
+    txt200.value = localStorage.getItem("pacc_tier_200") || PACC_TEMPLATE_200;
+  }
+  if (txtFallback && !txtFallback.value) {
+    txtFallback.value = localStorage.getItem("pacc_tier_fallback") || PACC_TEMPLATE_200;
+  }
+  if (txtSingle && !txtSingle.value) {
+    txtSingle.value = localStorage.getItem("pacc_single_template") || PACC_TEMPLATE_200;
+  }
+
+  // Save changes to localStorage on input
+  [
+    { el: txt1000, key: "pacc_tier_1000" },
+    { el: txt200, key: "pacc_tier_200" },
+    { el: txtFallback, key: "pacc_tier_fallback" },
+    { el: txtSingle, key: "pacc_single_template" }
+  ].forEach(item => {
+    if (item.el) {
+      item.el.addEventListener("input", () => {
+        localStorage.setItem(item.key, item.el.value);
+      });
+    }
+  });
+
+  // Toggle Mode Switcher
+  if (toggleTiered) {
+    toggleTiered.addEventListener("change", () => {
+      if (toggleTiered.checked) {
+        tieredWrapper.style.display = "block";
+        singleWrapper.style.display = "none";
+      } else {
+        tieredWrapper.style.display = "none";
+        singleWrapper.style.display = "block";
+      }
+    });
+  }
+
+  // Tier Tabs Switcher
+  const tierTabs = [
+    { btn: "btn-tab-tier-1000", pane: "pane-tier-1000" },
+    { btn: "btn-tab-tier-200", pane: "pane-tier-200" },
+    { btn: "btn-tab-tier-fallback", pane: "pane-tier-fallback" }
+  ];
+
+  tierTabs.forEach(tab => {
+    const btn = document.getElementById(tab.btn);
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      tierTabs.forEach(t => {
+        const b = document.getElementById(t.btn);
+        const p = document.getElementById(t.pane);
+        if (b) b.classList.remove("active");
+        if (p) {
+          p.classList.remove("active");
+          p.style.display = "none";
+        }
+      });
+      btn.classList.add("active");
+      const targetPane = document.getElementById(tab.pane);
+      if (targetPane) {
+        targetPane.classList.add("active");
+        targetPane.style.display = "block";
+      }
+    });
+  });
+}
+
+window.insertVariableToActive = function(varName) {
+  let activeTextarea = document.getElementById("template-tier-1000");
+  const p200 = document.getElementById("pane-tier-200");
+  const pFallback = document.getElementById("pane-tier-fallback");
+
+  if (p200 && p200.style.display !== "none") {
+    activeTextarea = document.getElementById("template-tier-200");
+  } else if (pFallback && pFallback.style.display !== "none") {
+    activeTextarea = document.getElementById("template-tier-fallback");
+  }
+
+  if (!activeTextarea) return;
+  const start = activeTextarea.selectionStart;
+  const end = activeTextarea.selectionEnd;
+  const text = activeTextarea.value;
+  activeTextarea.value = text.substring(0, start) + varName + text.substring(end);
+  activeTextarea.focus();
+  activeTextarea.selectionStart = activeTextarea.selectionEnd = start + varName.length;
+  activeTextarea.dispatchEvent(new Event("input"));
+};
+
 window.insertVariable = function(varName) {
   const textarea = document.getElementById("message-template");
   const start = textarea.selectionStart;
@@ -498,10 +611,31 @@ function initCampaignActions() {
       return;
     }
 
-    const template = document.getElementById("message-template").value.trim();
-    if (!template) {
-      alert("Silakan tulis template pesan DM yang ingin dikirim.");
-      return;
+    let templatePayload = "";
+    const isTiered = document.getElementById("toggle-tiered-template")?.checked;
+
+    if (isTiered) {
+      const tier1000 = document.getElementById("template-tier-1000")?.value.trim() || "";
+      const tier200 = document.getElementById("template-tier-200")?.value.trim() || "";
+      const tierFallback = document.getElementById("template-tier-fallback")?.value.trim() || "";
+
+      if (!tier1000 && !tier200 && !tierFallback) {
+        alert("Silakan isi minimal salah satu template pesan untuk target outreach.");
+        return;
+      }
+
+      templatePayload = JSON.stringify({
+        mode: "tiered",
+        tier_1000: tier1000 || tier200,
+        tier_200: tier200 || tier1000,
+        fallback: tierFallback || tier200 || tier1000
+      });
+    } else {
+      templatePayload = document.getElementById("message-template").value.trim();
+      if (!templatePayload) {
+        alert("Silakan tulis template pesan DM yang ingin dikirim.");
+        return;
+      }
     }
 
     const campaignName = document.getElementById("campaign-name").value.trim() || "Batch Outreach";
@@ -521,7 +655,7 @@ function initCampaignActions() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: campaignName,
-          message_template: template,
+          message_template: templatePayload,
           targets: loadedTargets,
           limit_count: limitCount,
           delay_min: delayMin,
@@ -733,6 +867,7 @@ function filterAndRenderResults() {
         <td>
           <div class="user-cell">
             <a href="${escapeHtml(t.target_url)}" target="_blank" class="user-username">@${escapeHtml(t.username)}</a>
+            ${t.follower_count ? `<span class="badge" style="font-size:0.72rem; background:#f1f5f9; color:#0f172a; margin-top:3px; display:inline-flex; align-items:center; gap:5px; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px;"><i class="fa-solid fa-users" style="color:#e11d48;"></i> ${escapeHtml(t.follower_count)}</span>` : ''}
             <span class="user-url">${escapeHtml(t.target_url)}</span>
           </div>
         </td>

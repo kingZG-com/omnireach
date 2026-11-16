@@ -182,7 +182,7 @@ class BotService {
           );
         }
 
-        await taskRepo.updateResult(task.id, res.status, res.message_sent, res.proof_path, res.error_detail);
+        await taskRepo.updateResult(task.id, res.status, res.message_sent, res.proof_path, res.error_detail, res.follower_count);
         processedCount++;
 
         websocket.broadcast('task_updated', {
@@ -191,6 +191,7 @@ class BotService {
           status: res.status,
           proof_path: res.proof_path,
           error_detail: res.error_detail,
+          follower_count: res.follower_count,
           progress: {
             current: processedCount,
             total: totalToProcess

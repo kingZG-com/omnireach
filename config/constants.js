@@ -9,27 +9,22 @@ module.exports = {
   },
   SELECTORS: {
     MESSAGE_BUTTONS: [
-      "a[href*='/messages'][href*='u=']",
-      "a[href*='messages?'][href*='u=']",
       "button[data-e2e='message-button']",
-      "a:has-text('Pesan')",
-      "button:has-text('Pesan')",
-      "div[role='button']:has-text('Pesan')",
-      "a:has-text('Message')",
-      "button:has-text('Message')",
-      "div[role='button']:has-text('Message')",
       "button[data-e2e='user-message-btn']",
       "div[data-e2e='user-message-btn']",
-      "a[data-e2e='user-message-btn']"
+      "button:has-text('Message')",
+      "button:has-text('Pesan')",
+      "div[role='button']:has-text('Message')",
+      "div[role='button']:has-text('Pesan')"
     ],
     CHAT_INPUTS: [
+      "div[contenteditable='true']",
       "div[data-e2e='dm-new-input-editor']",
+      "div[role='textbox']",
       "div[class*='DivInputAreaContainer']",
       "div[class*='DivEditorContainer']",
-      "div[contenteditable='true']",
       "div[data-e2e='message-input-area']",
       "div[data-e2e='chat-input']",
-      "div[role='textbox']",
       "textarea[placeholder*='message']",
       "textarea[placeholder*='pesan']",
       "textarea[placeholder*='Kirim pesan']",

@@ -54,6 +54,7 @@ async function launchPersistentBrowserContext(options = {}) {
       const opts = {
         headless: isHeadless,
         args: defaultArgs,
+        ignoreDefaultArgs: ['--enable-automation'],
         viewport: isHeadless ? { width: 1920, height: 1080 } : null,
         noViewport: !isHeadless,
         userAgent: USER_AGENT,
@@ -62,6 +63,21 @@ async function launchPersistentBrowserContext(options = {}) {
 
       if (ch) opts.channel = ch;
       context = await chromium.launchPersistentContext(PROFILE_DIR, opts);
+
+      // Stealth: Sembunyikan navigator.webdriver dan automation flag agar TikTok Web tidak memblokir IM/Chat
+      await context.addInitScript(() => {
+        try {
+          Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined,
+          });
+          window.chrome = window.chrome || {
+            runtime: {},
+            loadTimes: function() {},
+            csi: function() {},
+            app: {}
+          };
+        } catch (e) {}
+      });
       break;
     } catch (e) {
       cleanLocks();

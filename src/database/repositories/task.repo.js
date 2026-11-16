@@ -3,6 +3,15 @@ const { runQuery, getAllRows, getFormattedNow } = require('../connection');
 class TaskRepository {
   async addTasks(campaignId, targets) {
     const now = getFormattedNow();
+
+    // Pastikan jika antrean task sedang kosong, nomor urut ID / proof otomatis mulai dari 1 lagi
+    try {
+      const remaining = await getAllRows(`SELECT count(*) as cnt FROM outreach_tasks`);
+      if (remaining[0]?.cnt === 0) {
+        await runQuery(`DELETE FROM sqlite_sequence WHERE name = 'outreach_tasks'`);
+      }
+    } catch (e) {}
+
     for (const t of targets) {
       await runQuery(
         `INSERT INTO outreach_tasks (campaign_id, target_url, username, status, created_at)
@@ -42,20 +51,31 @@ class TaskRepository {
     return await getAllRows(sql, params);
   }
 
-  async updateResult(taskId, status, messageSent, proofPath = null, errorDetail = null) {
+  async updateResult(taskId, status, messageSent, proofPath = null, errorDetail = null, followerCount = null) {
     return await runQuery(
       `UPDATE outreach_tasks
-       SET status = ?, message_sent = ?, proof_path = ?, error_detail = ?, sent_at = ?
+       SET status = ?, message_sent = ?, proof_path = ?, error_detail = ?, follower_count = ?, sent_at = ?
        WHERE id = ?`,
-      [status, messageSent, proofPath, errorDetail, getFormattedNow(), taskId]
+      [status, messageSent, proofPath, errorDetail, followerCount ? String(followerCount) : null, getFormattedNow(), taskId]
     );
   }
 
   async clearAll(campaignId = null) {
     if (campaignId) {
-      return await runQuery(`DELETE FROM outreach_tasks WHERE campaign_id = ?`, [campaignId]);
+      await runQuery(`DELETE FROM outreach_tasks WHERE campaign_id = ?`, [campaignId]);
+      const remaining = await getAllRows(`SELECT count(*) as cnt FROM outreach_tasks`);
+      if (remaining[0]?.cnt === 0) {
+        try {
+          await runQuery(`DELETE FROM sqlite_sequence WHERE name = 'outreach_tasks'`);
+        } catch (e) {}
+      }
+      return;
     }
-    return await runQuery(`DELETE FROM outreach_tasks`);
+    const res = await runQuery(`DELETE FROM outreach_tasks`);
+    try {
+      await runQuery(`DELETE FROM sqlite_sequence WHERE name = 'outreach_tasks'`);
+    } catch (e) {}
+    return res;
   }
 
   async getStats(campaignId = null) {
@@ -88,4 +108,3 @@ class TaskRepository {
 }
 
 module.exports = new TaskRepository();
-

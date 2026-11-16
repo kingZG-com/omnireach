@@ -1,1 +1,62 @@
-node_modules
+# ==============================================================================
+# OMNIREACH (TIKREACH) - PRODUCTION GITIGNORE
+# ==============================================================================
+
+# 1. Dependencies
+node_modules/
+package-lock.json.bak
+
+# 2. Browser Profile & Chromium Data (CRITICAL: Sessions, Cookies & Cache)
+browser_profile/
+*.pma
+Crashpad/
+
+# 3. Runtime Database & Session Credentials (SQLite & Tokens)
+data/automation.db
+data/automation.db-journal
+data/automation.db-wal
+data/automation.db-shm
+data/*.db
+data/*.db-*
+data/session_info.json
+data/tiktok_cookies.json
+
+# 4. Screenshot Proofs of Work (PNG binaries generated during outreach)
+proofs/*.png
+!proofs/.gitkeep
+
+# 5. Environment & Secret Credentials
+.env
+.env.*
+!.env.example
+
+# 6. Logs & Process Dumps
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 7. Temporary Scratch Scripts & Local Debug Artifacts
+scratch/
+scratch_*
+test_*.js
+reset_db.js
+clean_browser_lock.js
+
+# 8. Operating System & Editor Files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 9. Build, Cache & Temporary Artifacts
+dist/
+build/
+.cache/
+temp/
+tmp/

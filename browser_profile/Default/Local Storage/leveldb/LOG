@@ -1,0 +1,24 @@
+2026/11/16-15:09:52.902 738 Reusing MANIFEST D:\Coding\Outreach_automation\browser_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/11/16-15:09:52.909 738 Recovering log #78
+2026/11/16-15:09:52.910 738 Level-0 table #81: started
+2026/11/16-15:09:52.922 738 Level-0 table #81: 46665 bytes OK
+2026/11/16-15:09:52.930 738 Recovering log #80
+2026/11/16-15:09:52.936 738 Reusing old log D:\Coding\Outreach_automation\browser_profile\Default\Local Storage\leveldb/000080.log 
+2026/11/16-15:09:52.941 738 Delete type=0 #78
+2026/11/16-15:11:54.447 55a0 Level-0 table #83: started
+2026/11/16-15:11:54.454 55a0 Level-0 table #83: 99308 bytes OK
+2026/11/16-15:11:54.456 55a0 Delete type=0 #80
+2026/11/16-15:14:54.445 55a0 Level-0 table #85: started
+2026/11/16-15:14:54.455 55a0 Level-0 table #85: 44622 bytes OK
+2026/11/16-15:14:54.458 55a0 Delete type=0 #82
+2026/11/16-15:14:54.458 55a0 Compacting 4@0 + 1@1 files
+2026/11/16-15:14:54.495 55a0 Generated table #86@0: 75 keys, 1359356 bytes
+2026/11/16-15:14:54.495 55a0 Compacted 4@0 + 1@1 files => 1359356 bytes
+2026/11/16-15:14:54.496 55a0 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/11/16-15:14:54.498 55a0 Delete type=2 #77
+2026/11/16-15:14:54.498 55a0 Delete type=2 #79
+2026/11/16-15:14:54.498 55a0 Delete type=2 #81
+2026/11/16-15:14:54.498 55a0 Delete type=2 #83
+2026/11/16-15:14:54.498 55a0 Delete type=2 #85
+2026/11/16-15:16:27.658 738 Level-0 table #88: started
+2026/11/16-15:16:27.668 738 Level-0 table #88: 45072 bytes OK

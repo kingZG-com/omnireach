@@ -272,16 +272,95 @@
                 </div>
               </div>
 
-              <!-- Message Template -->
+              <!-- Message Template Section with Follower Tiering Option -->
               <div class="form-group">
-                <div class="d-flex justify-between items-center mb-1">
-                  <label for="message-template" class="form-label">Template Pesan DM:</label>
-                  <div class="variable-chips">
-                    <span class="chip-tag" title="Klik untuk menyisipkan" onclick="insertVariable('{username}')">+{username}</span>
+                <!-- Toggle Mode Follower Tiering -->
+                <div class="template-tier-toggle-box" style="background: rgba(15, 23, 42, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1; padding-right: 12px;">
+                      <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-users-viewfinder text-primary"></i> Template Berdasarkan Follower Target (AI Tiering)
+                      </div>
+                      <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 0 0; line-height: 1.3;">
+                        Otomatis pilihkan template kolaborasi berdasarkan jumlah follower (<strong>200+</strong> vs <strong>1.000+</strong>)
+                      </p>
+                    </div>
+                    <label class="switch" style="flex-shrink: 0;">
+                      <input type="checkbox" id="toggle-tiered-template" checked>
+                      <span class="slider round"></span>
+                    </label>
                   </div>
                 </div>
-                <textarea id="message-template" class="form-control" rows="4" placeholder="Halo kak @{username}, salam kenal! Kami tertarik untuk kolaborasi campaign terbaru kami..."></textarea>
-                <p class="form-hint">Variabel <code>{username}</code> akan otomatis diganti dengan username masing-masing target.</p>
+
+                <!-- TIERED TEMPLATES CONTAINER (Active by default) -->
+                <div id="tiered-templates-wrapper">
+                  <!-- Tier Tabs Header -->
+                  <div class="input-tabs" style="margin-bottom: 12px;">
+                    <button type="button" class="tab-btn active" id="btn-tab-tier-1000" data-tier="1000">
+                      <i class="fa-solid fa-crown text-warning"></i> 1.000+ Follower
+                    </button>
+                    <button type="button" class="tab-btn" id="btn-tab-tier-200" data-tier="200">
+                      <i class="fa-solid fa-gift text-primary"></i> 200+ Follower
+                    </button>
+                    <button type="button" class="tab-btn" id="btn-tab-tier-fallback" data-tier="fallback">
+                      <i class="fa-solid fa-shield-halved text-muted"></i> Cadangan (Manual)
+                    </button>
+                  </div>
+
+                  <!-- Tier 1.000+ -->
+                  <div class="tier-pane active" id="pane-tier-1000">
+                    <div class="d-flex justify-between items-center mb-1">
+                      <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0;">
+                        <strong>Pesan untuk Follower 1.000+</strong> <span class="badge badge-accent" style="font-size: 0.68rem;">Headset Gratis iPhone</span>
+                      </label>
+                      <div class="variable-chips">
+                        <span class="chip-tag" title="Klik untuk menyisipkan" onclick="insertVariableToActive('{username}')">+{username}</span>
+                      </div>
+                    </div>
+                    <textarea id="template-tier-1000" class="form-control" rows="5" placeholder="Tulis template untuk kreator 1.000+ follower..."></textarea>
+                    <p class="form-hint" style="font-size: 0.74rem;">🎁 Penawaran: Free Headset (pengguna iPhone) + Komisi 10–15%.</p>
+                  </div>
+
+                  <!-- Tier 200+ -->
+                  <div class="tier-pane" id="pane-tier-200" style="display: none;">
+                    <div class="d-flex justify-between items-center mb-1">
+                      <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0;">
+                        <strong>Pesan untuk Follower 200 s/d 999</strong> <span class="badge badge-accent" style="font-size: 0.68rem;">Produk Gratis Aksesoris</span>
+                      </label>
+                      <div class="variable-chips">
+                        <span class="chip-tag" title="Klik untuk menyisipkan" onclick="insertVariableToActive('{username}')">+{username}</span>
+                      </div>
+                    </div>
+                    <textarea id="template-tier-200" class="form-control" rows="5" placeholder="Tulis template untuk mikro kreator 200+ follower..."></textarea>
+                    <p class="form-hint" style="font-size: 0.74rem;">🎁 Penawaran: Free Casing / Anti-Gores / Tempered Glass + Komisi 10–15%.</p>
+                  </div>
+
+                  <!-- Tier Fallback (Manual Ketik) -->
+                  <div class="tier-pane" id="pane-tier-fallback" style="display: none;">
+                    <div class="d-flex justify-between items-center mb-1">
+                      <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0;">
+                        <strong>Pesan Cadangan (Fallback Manual)</strong> <span class="badge" style="background:#e2e8f0; color:#334155; font-size: 0.68rem;">Akun Privat / &lt; 200</span>
+                      </label>
+                      <div class="variable-chips">
+                        <span class="chip-tag" title="Klik untuk menyisipkan" onclick="insertVariableToActive('{username}')">+{username}</span>
+                      </div>
+                    </div>
+                    <textarea id="template-tier-fallback" class="form-control" rows="5" placeholder="Tulis pesan cadangan jika follower tidak terbaca atau di bawah 200..."></textarea>
+                    <p class="form-hint" style="font-size: 0.74rem;">🛡️ Dikirim jika target berstatus akun privat, koneksi lambat, atau follower &lt; 200.</p>
+                  </div>
+                </div>
+
+                <!-- SINGLE TEMPLATE CONTAINER (Hidden when tiered mode is active) -->
+                <div id="single-template-wrapper" style="display: none;">
+                  <div class="d-flex justify-between items-center mb-1">
+                    <label for="message-template" class="form-label">Template Pesan Tunggal:</label>
+                    <div class="variable-chips">
+                      <span class="chip-tag" title="Klik untuk menyisipkan" onclick="insertVariable('{username}')">+{username}</span>
+                    </div>
+                  </div>
+                  <textarea id="message-template" class="form-control" rows="4" placeholder="Halo kak @{username}, salam kenal! Kami tertarik untuk kolaborasi campaign terbaru kami..."></textarea>
+                  <p class="form-hint">Variabel <code>{username}</code> akan otomatis diganti dengan username masing-masing target.</p>
+                </div>
               </div>
 
               <!-- Delay Anti-Ban -->

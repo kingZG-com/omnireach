@@ -25,11 +25,18 @@ async function initDb() {
       message_sent TEXT,
       proof_path TEXT,
       error_detail TEXT,
+      follower_count TEXT,
       sent_at TIMESTAMP,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (campaign_id) REFERENCES campaigns (id)
     )
   `);
+
+  try {
+    await runQuery(`ALTER TABLE outreach_tasks ADD COLUMN follower_count TEXT`);
+  } catch (e) {
+    // Kolom mungkin sudah ada di database lokal
+  }
 
   await runQuery(`
     CREATE TABLE IF NOT EXISTS activity_logs (

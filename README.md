@@ -1,277 +1,681 @@
-# TikReach v2.0 - Enterprise TikTok Outreach & DM Automation Engine
+# 🚀 OmniReach (TikReach v2.0) - Enterprise TikTok Outreach & Automation Platform
+> **Master Documentation, Architectural Specification, UI Redesign Blueprint & Feature Roadmap**
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express-4.19-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
 [![Playwright](https://img.shields.io/badge/Playwright-1.45%20Persistent-45ba4b?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![SQLite3](https://img.shields.io/badge/SQLite-3.x-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![WebSocket](https://img.shields.io/badge/WebSocket-Native%20ws-010101?style=flat-square&logo=socketdotio&logoColor=white)](https://github.com/websockets/ws)
-[![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Modular-blue?style=flat-square)](https://blog.cleancoder.com/)
-
-**TikReach** adalah platform otomasi outreach dan direct message (DM) TikTok berskala enterprise yang dirancang dengan prinsip **Clean Architecture & Modular Services**. Solusi ini mengkombinasikan ketangguhan **Playwright Persistent Context Engine**, **Turbo Route Filtering (3x-5x lebih cepat)**, sistem deteksi bot adaptif (Puzzle Captcha & Dynamic React Hydration), serta live streaming log berbasis native **WebSocket**.
-
-Platform ini dibuat untuk memudahkan bisnis, agensi, dan talent manager melakukan personalized outreach secara terukur, aman, dan memiliki **verifiable proof of delivery** (bukti screenshot otomatis).
+[![Stealth](https://img.shields.io/badge/Anti--Detection-Stealth%20Hardened-orange?style=flat-square)](https://playwright.dev/)
+[![UI Design](https://img.shields.io/badge/Design%20System-Clean%20Light%20Theme-blue?style=flat-square)](app/static/)
 
 ---
 
-## 🏗️ System Architecture & Data Flow
+## 📖 Ringkasan Eksekutif & Tujuan Dokumen
 
-Sistem mengadopsi pemisahan dependensi (Separation of Concerns) berlapis dengan pemisahan antara Presentation (API/WebSockets), Domain (Business Logic/Services), Infrastructure (Browser Engine & Storage), dan Data Access (Repositories).
+**OmniReach (TikReach v2.0)** adalah platform otomasi outreach, direct message (DM), dan talent scouting TikTok berskala enterprise yang dirancang khusus untuk agensi pemasaran (*influencer marketing agency*), brand owner, affiliate manager, serta tim talent acquisition.
+
+Dokumen ini disusun sebagai **Single Source of Truth (SSOT)** dan cetak biru menyeluruh (*master blueprint*) yang mencakup:
+1. **Arsitektur Teknis Lengkap:** Backend Express, antrean orkestrasi Playwright, WebSocket telemetri, skema database SQLite, dan algoritma anti-deteksi bot.
+2. **Cetak Biru Redesain Antarmuka (UI Redesign Blueprint):** Dokumentasi detail semua elemen DOM, ID, kelas CSS, alur navigasi, dan fungsi JavaScript frontend agar siap dirombak menggunakan tool perancang modern (seperti **Google Stitch MCP**, Figma, atau Tailwind UI) tanpa merusak integrasi logika aplikasi.
+3. **Spesifikasi Modul Follow-Up Automation (TikTok):** Rancangan fitur lanjutan untuk mengidentifikasi kreator yang belum merespons pesan pertama, memeriksa riwayat obrolan secara visual, dan mengirimkan pesan berantai berjadwal (*sequential follow-up campaign*).
+4. **Logika Dynamic Follower Tiering:** Sistem cerdas pendeteksi jumlah follower kreator target secara realtime di halaman profil untuk menentukan copywriting penawaran yang paling relevan (Tier 200+, Tier 1.000+, dan Fallback Cadangan).
+
+---
+
+## 📑 Daftar Isi
+
+- [1. Arsitektur Sistem & Diagram Alur Data](#1-arsitektur-sistem--diagram-alur-data)
+- [2. Fitur Utama & Inovasi Teknologi Saat Ini](#2-fitur-utama--inovasi-teknologi-saat-ini)
+- [3. Logika Dynamic Follower Tiering & AI Approaching](#3-logika-dynamic-follower-tiering--ai-approaching)
+- [4. Spesifikasi Fitur Baru: TikTok Follow-Up Automation Engine](#4-spesifikasi-fitur-baru-tiktok-follow-up-automation-engine)
+- [5. Cetak Biru Lengkap Redesain Antarmuka (UI/UX Blueprint)](#5-cetak-biru-lengkap-redesain-antarmuka-uiux-blueprint)
+- [6. Struktur Lengkap Repositori & Direktori](#6-struktur-lengkap-repositori--direktori)
+- [7. Spesifikasi Skema Database Relasional (SQLite)](#7-spesifikasi-skema-database-relasional-sqlite)
+- [8. Dokumentasi Lengkap REST API Endpoints](#8-dokumentasi-lengkap-rest-api-endpoints)
+- [9. Spesifikasi Protokol WebSocket Telemetry](#9-spesifikasi-protokol-websocket-telemetry)
+- [10. Kebijakan Anti-Deteksi & Mitigasi Limit Algoritma TikTok](#10-kebijakan-anti-deteksi--mitigasi-limit-algoritma-tiktok)
+- [11. Panduan Instalasi & Eksekusi Cepat](#11-panduan-instalasi--eksekusi-cepat)
+
+---
+
+## 1. Arsitektur Sistem & Diagram Alur Data
+
+Aplikasi dibangun dengan prinsip **Clean Architecture & Decoupled Modular Services**, memisahkan presentasi UI, kontrol API, antrean orkestrasi bot, serta lapisan persistensi database.
 
 ```mermaid
 flowchart TD
-    subgraph Client["Web Dashboard / Client Layer"]
-        UI["Modern Responsive UI\n(HTML5 / CSS3 / Vanilla JS)"]
-        WSClient["WebSocket Client\n(Realtime Telemetry & Live Logs)"]
+    subgraph UI_Layer ["Frontend / Client Layer (app/static)"]
+        Dashboard["Web Dashboard (dashboard.html)"]
+        Landing["Landing Page Showcase (landing.html)"]
+        LiveConsole["Live WebSocket Terminal Log"]
+        ProofViewer["Modal Bukti Screenshot"]
+        TierControls["Follower Tier Switcher & Presets"]
     end
 
-    subgraph API["Presentation & Routing Layer"]
-        Server["Express HTTP Server (:8000)"]
-        WSMgr["WebSocket Hub (ws://localhost:8000/ws)"]
-        Routes["API Endpoints\n(/auth, /campaign, /tasks, /logs)"]
+    subgraph API_Layer ["API & Communication Hub (Express + WS)"]
+        ExpressServer["Express HTTP Server (:8000)"]
+        WSHub["WebSocket Broadcaster Hub (/ws)"]
+        RouterAuth["/api/session/* (Auth Routes)"]
+        RouterCampaign["/api/campaign/* (Campaign Routes)"]
+        RouterTask["/api/tasks/* (Task & Export Routes)"]
     end
 
-    subgraph Domain["Business Logic & Service Layer"]
-        BotSvc["Bot Orchestrator Service\n(Task Queue, Loop Control & Delays)"]
-        TikTokSvc["TikTok Automation Service\n(DOM Hydration, Navigation & Input)"]
-        AuthSvc["Auth & Session Service\n(Identity Resolution & Cookies)"]
+    subgraph Orchestration_Layer ["Core Engine & Automation Logic"]
+        BotOrchestrator["Bot Service (Queue Runner & Human Delays)"]
+        TikTokEngine["TikTok Automation Service (DOM & Navigation)"]
+        FollowerDetector["DOM Follower Extractor & Regex Parser"]
+        CaptchaEngine["AI Puzzle Captcha Resolver (Canvas Bézier)"]
+        TurboRouting["Turbo Route Interceptor (Block Media/Trackers)"]
     end
 
-    subgraph Core["Core Engine & Infrastructure"]
-        BrowserEngine["Playwright Persistent Engine\n(--disable-blink-features=AutomationControlled)"]
-        TurboRouter["Turbo Engine Interceptor\n(Media & Tracker Blocking Route)"]
-        Storage["SQLite 3 Database\n(Campaigns, Tasks, Sessions, Logs)"]
-        Proofs["Verifiable Storage\n(Timestamped Screenshot PNGs)"]
+    subgraph Storage_Layer ["Physical Storage & Persistence"]
+        PlaywrightContext["Playwright Chromium Engine"]
+        BrowserProfile["browser_profile/ (Persistent Cookies & Sessions)"]
+        SQLiteDB[(data/automation.db - SQLite3)]
+        ProofStorage["proofs/ (High-Res Verification PNGs)"]
     end
 
-    UI -->|REST Requests / Multipart| Server
-    WSClient <-->|Bi-directional Events| WSMgr
-    Server --> Routes
-    Routes --> BotSvc
-    Routes --> AuthSvc
-    BotSvc --> TikTokSvc
-    TikTokSvc --> BrowserEngine
-    BrowserEngine --> TurboRouter
-    BotSvc --> Storage
-    BotSvc --> WSMgr
-    TikTokSvc --> Proofs
+    Dashboard -->|REST Requests| ExpressServer
+    Dashboard <-->|Bi-directional WS Events| WSHub
+    ExpressServer --> RouterAuth & RouterCampaign & RouterTask
+    RouterCampaign --> BotOrchestrator
+    RouterTask --> SQLiteDB
+    BotOrchestrator --> TikTokEngine
+    TikTokEngine --> FollowerDetector
+    TikTokEngine --> CaptchaEngine
+    TikTokEngine --> TurboRouting
+    TikTokEngine --> PlaywrightContext
+    PlaywrightContext <--> BrowserProfile
+    BotOrchestrator --> SQLiteDB
+    BotOrchestrator --> WSHub
+    TikTokEngine --> ProofStorage
+    ProofViewer -->|Fetch Proof PNG| ProofStorage
 ```
 
 ---
 
-## ⚡ Technical Highlights & Core Innovations
+## 2. Fitur Utama & Inovasi Teknologi Saat Ini
 
-### 1. 🛡️ Persistent Browser Context Engine (Zero Session Loss)
-Menggunakan `launchPersistentBrowserContext` dengan direktori profil fisik (`browser_profile/`). Sistem menyimpan cookies, session tokens, indexedDB, dan identitas browser secara permanen di disk. 
-- **Keunggulan:** Anda tidak perlu login berulang kali setiap memulai kampanye. Session login TikTok Anda bertahan layaknya browser Chrome harian.
+### 🛡️ 1. Persistent Browser Context (Login Sekali Selamanya)
+* Menggunakan `launchPersistentBrowserContext` Playwright dengan direktori penyimpanan profil fisik di `browser_profile/`.
+* Menyimpan sesi login, token otentikasi, IndexedDB, dan cache peramban Chromium secara permanen.
+* Dilengkapi utilitas otomatis `cleanLocks()` yang membersihkan `SingletonLock` ketika browser tertutup secara mendadak atau terjadi kegagalan proses.
 
-### 2. 🚀 Turbo Engine Network Interceptor (3x-5x Faster Throughput)
-Mengimplementasikan Playwright Route Interception cerdas yang memotong lalu lintas data berat tanpa merusak struktur DOM:
-- **Media Blocking:** Memblokir stream video berukuran besar (`.mp4`, `.webm`, `.ts`, video blob).
-- **Tracker Blocking:** Memfilter request telemetri beban tinggi (`google-analytics`, `mon.tiktokv.com`, `mcs.tiktok.com`).
-- **Hasil:** Waktu tunggu loading profil TikTok turun drastis dari 8-12 detik menjadi hanya 1-2 detik, menghemat bandwidth CPU dan RAM secara signifikan.
+### 🕵️ 2. Anti-Detection Stealth Hardening
+* Menginjeksi skrip runtime sebelum halaman dimuat:
+  * `navigator.webdriver = undefined`
+  * Mocking objek `window.chrome` (runtime, app, csi, loadTimes).
+* Menghilangkan flag otomatisasi berbahaya Playwright dengan parameter `--disable-blink-features=AutomationControlled` dan `ignoreDefaultArgs: ['--enable-automation']`.
+* Memastikan koneksi WebSocket internal TikTok Web (`/ws`) tidak memblokir pengiriman direct message.
 
-### 3. 🎯 Resilient DOM & Endpoint Direct Navigation
-Sistem tidak mengandalkan selector statis yang rapuh terhadap update TikTok:
-- **Dynamic React Hydration:** Mendeteksi skeleton loading TikTok secara cerdas sebelum melakukan interaksi tombol.
-- **Direct Chat Navigation:** Mengekstrak parameter `sec_uid` dari endpoint `a[href*='/messages?u=...']` untuk langsung melompat ke inbox obrolan pengguna tanpa simulasi klik bertingkat.
-- **Self-Profile & Closed DM Detection:** Otomatis mendeteksi jika target adalah akun sendiri (`Edit profile`) atau jika akun target mengunci pesan pribadinya, mencatat status `DM Closed` secara rapi tanpa membuat bot hang.
-- **Puzzle Captcha Guard:** Mendeteksi kemunculan challenge puzzle slider dan memberikan jeda interaktif 60 detik bagi pengguna untuk menyelesaikan verifikasi manusia.
+### ⚡ 3. Turbo Route Interception (Hemat RAM & Kuota 70%)
+* Melakukan intersepsi pada level jaringan peramban (*network request route interception*).
+* Memblokir otomatis pengunduhan media berat yang tidak diperlukan untuk pengiriman DM:
+  * Berkas video feed TikTok (`.mp4`, `.webm`, `.m3u8`).
+  * Ribuan baris pelacak telemetri analitik (*mon.tiktok.com*, *byteoversea.com*, *tiktokv.com*).
+* Halaman profil target terbuka **3x hingga 5x lebih cepat** dan konsumsi RAM berkurang hingga 70%.
 
-### 4. ⚡ Instant Native Text Input
-Menggunakan pipeline native keyboard `insertText` pada container pesan `[contenteditable='true']`. Teks panjang (personalized pitch) terinput dalam hitungan milidetik secara mulus dan memicu event `input` React asli tanpa lag pengetikan lambat.
+### 💬 4. Single-Bubble Multi-Line Message Delivery
+* **Kebijakan Ketat TikTok:** Pada akun yang belum saling mengikuti (*non-mutual*), TikTok hanya mengizinkan pengiriman **1 balon pesan obrolan**. Jika pesan multi-baris dikirimkan satu per satu menggunakan tombol Enter biasa, pesan baris kedua akan langsung ditolak sistem dengan galat *"Pesan dibatasi demi keamanan"*.
+* **Solusi Atomik:** OmniReach menginjeksi seluruh baris pesan (termasuk emoji, tanda kurung, dan enter `\n`) secara utuh menggunakan `page.keyboard.insertText(message)`. Pesan terkirim sempurna dalam **satu balon chat tunggal**.
 
-### 5. 📸 Verifiable Proof of Work (Timestamped Capture)
-Setiap pesan yang berhasil dikirimkan ke target akan otomatis di-screenshot pada layar obrolan TikTok dan disimpan di direktori `proofs/`. Dilengkapi modal image viewer dan tombol download untuk audit klien/manajemen.
+### 📸 5. Proof-of-Work Verification (Tangkapan Layar Resolusi Tinggi)
+* Sistem tidak mengandalkan asumsi waktu (*arbitrary delay*).
+* Bot memindai area obrolan aktif ($x \ge 280\text{px}$) hingga 20 detik untuk mengonfirmasi bahwa balon teks obrolan **secara nyata muncul di layar obrolan**.
+* Setelah balon pesan terkonfirmasi muncul, sistem mengambil screenshot layar resolusi tinggi dan menyimpannya secara otomatis ke:
+  `proofs/proof_{taskId}_{username}_{timestamp}.png`.
+* Jika pesan gagal muncul di layar (misalnya dibatasi atau akun target privat), screenshot tidak disimpan dan tugas ditandai secara jujur sebagai `failed` atau `dm_closed`.
 
-### 6. 📡 Real-Time Telemetry via Native WebSocket
-Semua status eksekusi, progress bar, persentase keberhasilan, dan log mesin disiarkan secara *instant* ke UI melalui koneksi WebSocket bi-directional tanpa membebani server dengan polling HTTP berkala.
+### 🧩 6. AI Puzzle Captcha Auto-Solver
+* Modul `captcha.service.js` mendeteksi tantangan puzzle slider TikTok.
+* Membaca celah puzzle melalui manipulasi Canvas in-memory dan menggeser slider menggunakan kurva interpolasi pergerakan tangan manusia (*Cubic Bézier easing curve with micro-jitter & overshoot correction*).
 
-### 7. 👻 Dual Execution Mode: Headless vs Visual
-Tersedia toggle mode **Headless** langsung dari dashboard web. Saat diaktifkan, Playwright berjalan di background tanpa me-render jendela visual, mematikan beban rendering grafis GPU dan memangkas penggunaan CPU & RAM hingga **70%** (sangat ramah untuk laptop dengan spek terbatas).
-
-### 8. 🧩 AI Puzzle Captcha Resolver & Humanized Drag
-Dilengkapi service AI cerdas [src/services/captcha.service.js](file:///d:/Coding/Outreach_automation/src/services/captcha.service.js) yang memindai kontras pixel bayangan celah kepingan puzzle secara in-browser via Canvas context. Slider digeser menggunakan kurva interpolasi pergerakan tangan manusia (*Cubic Bézier easing & micro-jitter*) yang otomatis mengoreksi overshoot untuk melewati deteksi bot TikTok.
+### 🔄 7. Auto-Reset Sequence Penomoran Proof
+* Setiap kali antrean kampanye selesai atau dibersihkan dari antrean kosong, sistem mereset `sqlite_sequence` tabel `outreach_tasks` sehingga penomoran tugas dan berkas screenshot selalu rapi dimulai dari angka 1 (`proof_1_...`).
 
 ---
 
-## 📁 Clean Codebase Directory Tree
+## 3. Logika Dynamic Follower Tiering & AI Approaching
+
+Fitur ini memungkinkan pengguna untuk membedakan materi penawaran kolaborasi (*value proposition*) secara dinamis berdasarkan skala jangkauan kreator target.
+
+### 🎯 Pembagian Tingkatan (Tiers) & Preset Copywriting
+
+#### 1. 🚀 Tier 1.000+ Followers (Kreator Mapan / Makro Pemula)
+* **Kriteria:** Akun dengan jumlah pengikut $\ge 1.000$.
+* **Value Hook:** Penawaran komisi penjualan 10–15% ditambah **Hadiah Headset Eksklusif** (khusus pengguna iPhone).
+* **Preset Template:**
+  ```text
+  Halo Kak! 👋 Aku Zakaria dari tim Business Development PACC.
+  Aku lihat konten kakak punya engagement yang bagus dan audiens lokal yang solid. Kami tertarik ngajak Kakak kolaborasi sebagai Shopee Affiliate PACC karena konten Kakak relevan dengan produk kami.
+  🎧 Khusus Kakak jika pengguna iPhone, ada HEADSET GRATIS dari produk yang Kakak promosikan, plus komisi 10–15% dari setiap penjualan.
+  Apakah kakak berkenan untuk aku share detail kolaborasinya?😊
+  ```
+
+#### 2. 🎁 Tier 200+ s/d 999 Followers (Mikro / Nano Kreator)
+* **Kriteria:** Akun dengan jumlah pengikut antara $200$ hingga $999$.
+* **Value Hook:** Penawaran komisi penjualan 10–15% ditambah **Produk Gratis Aksesoris** (anti-gores / casing / tempered glass).
+* **Preset Template:**
+  ```text
+  Halo Kak! 👋 Aku Zakaria dari tim Business Development PACC.
+  Aku lihat konten kakak punya engagement yang bagus dan audiens lokal yang solid. Kami tertarik ngajak Kakak kolaborasi sebagai Shopee Affiliate PACC karena konten Kakak relevan dengan produk kami.
+  🎁 Kakak dapat produk GRATIS (anti-gores / casing / tempered glass) buat dikontenin, plus komisi 10–15% dari setiap penjualan.
+  Apakah kakak berkenan untuk aku share detail kolaborasinya?😊
+  ```
+
+#### 3. 🛡️ Tier Cadangan / Fallback (Diketikan Manual oleh Pengguna)
+* **Kriteria:** Akun berstatus privat, kreator dengan pengikut $< 200$, atau jika angka follower belum selesai dimuat oleh jaringan.
+* **Tujuan:** Menjamin proses outreach tidak macet dan pesan yang terkirim tetap sopan serta terkontrol oleh pengguna (tidak menggunakan pesan rahasia/bawaan bot).
+* **Default Preset:** Diisi salinan pesan Tier 200+ yang dapat diedit bebas langsung dari antarmuka dashboard.
+
+### 🧠 Algoritma Ekstraksi & Regex Follower Parser
+Ekstraksi dijalankan di dalam `src/services/tiktok.service.js` melalui dua tahap:
+1. **DOM Extraction:** Menemukan tag `strong[data-e2e="followers-count"]` atau elemen kontainer profil, dengan memprioritaskan teks murni di dalam tag (`textContent`) dan memastikan teks yang diambil mengandung angka (`hasNumber(txt)`). Atribut kata `title="Followers"` diabaikan agar tidak salah terbaca sebagai huruf.
+2. **Regex Number Normalizer (`parseFollowerCount`):**
+   * Format berakhiran unit: `1.5K`, `1,5K`, `10.2M`, `5 rb`, `1.2 jt` dikalikan dengan faktor pengali yang sesuai ($1.000$ atau $1.000.000$).
+   * Format angka bulat murni: `1000`, `1194`, `1.000 Pengikut`, `1,194 Followers` dibersihkan dari karakter non-numerik dan diubah menjadi integer murni.
+   * Toleransi Hidrasi: Sistem menunggu hingga 4 detik pada halaman profil agar angka follower selesai ter-render oleh JavaScript TikTok sebelum menentukan template pesan.
+
+---
+
+## 4. Spesifikasi Fitur Baru: TikTok Follow-Up Automation Engine
+
+> **PENTING UNTUK PENGEMBANGAN UI & BACKEND SELANJUTNYA**
+
+### 💡 Latar Belakang & Masalah
+Dalam strategi pemasaran afiliasi dan endorsement, **lebih dari 70% kreator tidak merespons pada pesan penawaran pertama** karena padatnya notifikasi inbox TikTok mereka. Mengirimkan pesan tindak lanjut (*follow-up*) berselang 2–4 hari setelah pesan pertama terbukti meningkatkan tingkat konversi balasan (*reply rate*) hingga **300%**.
+
+### ⚙️ Alur Kerja & Logika Sistem Follow-Up
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Marketer / User
+    participant Dash as Dashboard UI
+    participant Bot as Follow-Up Engine
+    participant TikTok as TikTok Web Chat
+    participant DB as SQLite Database
+
+    User->>Dash: Buka Menu "TikTok Follow-Up Hub"
+    Dash->>DB: Query Tasks: Status 'sent' & Belum Dibalas & Waktu >= Min_Delay
+    DB-->>Dash: Tampilkan Daftar Target Siap Follow-Up
+    User->>Dash: Atur Template Follow-Up & Klik "Mulai Follow-Up"
+    Dash->>Bot: POST /api/followup/start (Campaign ID, Delay, Templates)
+    loop Setiap Target Siap Follow-Up
+        Bot->>TikTok: Buka Ruang Chat https://www.tiktok.com/messages?u=username
+        Bot->>TikTok: Scan Balon Chat Terakhir di Layar
+        alt Target Sudah Membalas Chat (Incoming Message Detected)
+            Bot->>DB: Update Status: 'replied', Skip Follow-Up Otomatis
+            Bot-->>Dash: Broadcast WS: "Target @user sudah membalas! Dialihkan ke tim sales."
+        else Target Belum Membalas & Chat Terakhir Masih Pesan Kita
+            Bot->>TikTok: Ketik Pesan Follow-Up (Single Bubble)
+            Bot->>TikTok: Verifikasi Balon Chat & Ambil Bukti Screenshot
+            Bot->>DB: Update Status: 'followup_sent', Simpan Waktu & Bukti Baru
+            Bot-->>Dash: Broadcast WS: "Follow-Up ke @user Terkirim! Screenshot tersimpan."
+        end
+        Bot->>Bot: Jeda Waktu Human Jitter (25 - 60 Detik)
+    end
+```
+
+### 📋 Skema Aturan Bisnis Follow-Up (*Business Rules*)
+1. **Pengecekan Balasan Nyata (*Reply Detection*):**
+   * Sebelum mengirim follow-up, bot wajib membuka ruang obrolan target (`/messages?u=...` atau membuka profil target dan klik Pesan).
+   * Bot mengevaluasi elemen chat bubble:
+     * Jika gelembung chat terakhir berada di sisi kiri (dari target), artinya target **sudah membalas**. Bot **TIDAK BOLEH** mengirim follow-up otomatis dan menandai status sebagai `replied` (Lead Hangat / Butuh Balasan Manual).
+     * Jika gelembung chat terakhir adalah pesan outreach pertama kita dan berstatus *Delivered* atau *Seen*, bot diizinkan mengirim pesan follow-up.
+2. **Jeda Waktu Aman (*Follow-Up Interval*):**
+   * Pesan follow-up hanya dieksekusi jika selisih waktu pengiriman pertama dengan hari ini minimal **48 jam s.d. 72 jam (H+2 atau H+3)**.
+3. **Maksimal Siklus Follow-Up:**
+   * **Follow-up 1 (H+2/H+3):** Menanyakan apakah pesan sebelumnya sudah sempat dibaca secara sopan (*friendly reminder*).
+   * **Follow-up 2 (H+5/H+7):** Penawaran kuota terbatas (*urgency / last call*).
+   * Maksimal follow-up adalah **2 kali**. Jika tetap tidak ada respons, status target diubah menjadi `closed_unresponsive` untuk menjaga reputasi akun dari spam report.
+
+### 🗄️ Skema Database untuk Fitur Follow-Up
+Tabel baru yang akan ditambahkan ke SQLite:
+```sql
+CREATE TABLE IF NOT EXISTS followup_campaigns (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  source_campaign_id INTEGER,
+  followup_template TEXT NOT NULL,
+  delay_days INTEGER DEFAULT 2,
+  status TEXT DEFAULT 'idle',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (source_campaign_id) REFERENCES campaigns (id)
+);
+
+CREATE TABLE IF NOT EXISTS followup_tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  followup_campaign_id INTEGER,
+  outreach_task_id INTEGER,
+  target_username TEXT NOT NULL,
+  target_url TEXT NOT NULL,
+  status TEXT DEFAULT 'pending', -- pending, sent, replied_skipped, failed
+  message_sent TEXT,
+  proof_path TEXT,
+  sent_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (followup_campaign_id) REFERENCES followup_campaigns (id),
+  FOREIGN KEY (outreach_task_id) REFERENCES outreach_tasks (id)
+);
+```
+
+---
+
+## 5. Cetak Biru Lengkap Redesain Antarmuka (UI/UX Blueprint)
+
+> **BAGIAN INI ADALAH PANDUAN UTAMA KETIKA ANDA MEROMBAK DESAIN MENGGUNAKAN GOOGLE STITCH MCP ATAU TOOL UI LAINNYA.**  
+> Seluruh elemen ID dan atribut di bawah ini terikat langsung ke controller JavaScript (`app/static/js/app.js`). Jangan mengganti atau menghapus ID ini saat mengganti tampilan CSS / layout HTML!
+
+### 🗺️ Peta Navigasi & Tab Halaman
+
+| ID Tab Navigasi | ID Panel Konten | Judul Header (`#page-title`) | Sub-Judul Header (`#page-subtitle`) |
+|---|---|---|---|
+| `#nav-dashboard` | `#tab-dashboard` | `Dashboard & Outreach Campaign` | Otomatisasi pengiriman pesan TikTok langsung ke target list Anda |
+| `#nav-results` | `#tab-results` | `Result & Bukti DM` | Bukti screenshot obrolan terkirim dan ringkasan target selesai |
+| `#nav-logs` | `#tab-logs` | `Live Logs & Audit Trail` | Pantau setiap aktivitas robot browser secara mendalam |
+| *(Baru)* `#nav-followup` | *(Baru)* `#tab-followup` | `TikTok Follow-Up Hub` | Otomasi tindak lanjut pesan untuk kreator yang belum merespons |
+
+---
+
+### 📑 Daftar Lengkap Elemen DOM & ID Komponen UI
+
+#### 1. Sidebar & Session Widget (Bilah Kiri)
+* `#session-dot` : Titik indikator denyut status sesi (`pulse-dot`). Berwarna hijau jika sesi aktif, merah jika terputus.
+* `#session-label` : Label status teks (misal: `"Sesi Browser Aktif"` atau `"Sesi Belum Login"`).
+* `#session-username` : Menampilkan nama akun TikTok pengirim yang sedang aktif (misal: `@kingzakarias`).
+* `#btn-edit-username` : Tombol pensil untuk menyesuaikan username akun secara manual jika diperlukan.
+* `#session-hint` : Teks pembantu di bawah akun pengirim.
+* `#btn-login-browser` : Tombol utama untuk memanggil `GET /api/session/open-login` guna membuka jendela Chrome otentikasi.
+* `#btn-logout` : Tombol warna merah untuk menghapus sesi aktif melalui `POST /api/session/logout`.
+
+#### 2. Header & Status Bar (Bilah Atas)
+* `#page-title` : Elemen `<h1>` judul dinamis halaman.
+* `#page-subtitle` : Elemen `<p>` deskripsi sub-judul halaman.
+* `#btn-refresh-status` : Tombol refresh untuk mengecek ulang sesi login dan pembaruan metrik.
+* `#campaign-status-pill` : Kontainer pill status kampanye aktif.
+* `#campaign-status-text` : Teks indikator status mesin (contoh: `"Status: Siap (Idle)"` atau `"Status: Berjalan (Running)"`).
+
+#### 3. Tab Dashboard - Bagian Input Target
+* `#sender-account-display` : Menampilkan username akun pengirim aktif di banner informasi.
+* `#sender-account-status` : Badge status akun pengirim (`"Siap Outreach"`).
+* `#btn-tab-upload` : Tab tombol beralih ke mode unggah berkas `.txt` / `.csv`.
+* `#btn-tab-paste` : Tab tombol beralih ke mode tempel teks manual.
+* `#drop-zone` : Area seret-lepas berkas (*drag and drop zone*).
+* `#target-file-input` : Input file tersembunyi (`type="file" accept=".txt,.csv"`).
+* `#file-info` : Kontainer informasi nama berkas yang berhasil diunggah.
+* `#file-name` : Teks nama berkas dan jumlah akun target terdeteksi.
+* `#paste-zone` : Kontainer textarea tempel tautan manual.
+* `#manual-links-text` : Textarea input baris tautan TikTok manual.
+* `#btn-parse-text` : Tombol proses parsing target dari textarea.
+* `#targets-preview-wrapper` : Kontainer daftar pratinjau target terdeteksi.
+* `#preview-count` : Angka total target yang siap dikirimi pesan.
+* `#target-count-badge` : Badge indikator jumlah target di header card.
+* `#btn-clear-targets` : Tombol merah untuk menghapus target yang telah dimuat.
+* `#targets-scroll-list` : Area daftar scroll target terdeteksi.
+
+#### 4. Tab Dashboard - Pengaturan DM & Follower Tiering
+* `#campaign-name` : Input teks nama kampanye (default: `"Outreach Batch #1"`).
+* `#limit-slider` : Input slider rentang kuota kirim (`type="range"`).
+* `#limit-display` : Angka kuota terpilih saat ini.
+* `#limit-total-display` : Label total akun tersedia (`/ X akun`).
+* `.btn-chip[data-limit]` : Tombol-tombol chip kuota cepat (`5`, `10`, `20`, `50`, `all`).
+* `#btn-chip-all` : Chip khusus untuk memilih seluruh target.
+* `#toggle-tiered-template` : Checkbox toggle pengaktif fitur **AI Follower Tiering**.
+* `#tiered-templates-wrapper` : Kontainer sistem 3 Tab Tiering Follower.
+* `#btn-tab-tier-1000` : Tombol tab untuk mengedit pesan Tier 1.000+ Followers.
+* `#btn-tab-tier-200` : Tombol tab untuk mengedit pesan Tier 200+ Followers.
+* `#btn-tab-tier-fallback` : Tombol tab untuk mengedit pesan Cadangan / Fallback.
+* `#pane-tier-1000` : Panel konten textarea untuk Tier 1.000+.
+* `#template-tier-1000` : Textarea copywriting pesan kreator 1.000+ (Headset iPhone).
+* `#pane-tier-200` : Panel konten textarea untuk Tier 200+.
+* `#template-tier-200` : Textarea copywriting pesan mikro kreator 200+ (Produk Aksesoris).
+* `#pane-tier-fallback` : Panel konten textarea untuk Cadangan / Fallback.
+* `#template-tier-fallback` : Textarea copywriting pesan cadangan (Manual).
+* `#single-template-wrapper` : Kontainer template tunggal (muncul jika Tiering dimatikan).
+* `#message-template` : Textarea template pesan tunggal.
+* `onclick="insertVariableToActive('{username}')"` : Fungsi helper menyisipkan tag `{username}` ke textarea tier yang sedang aktif.
+* `#delay-min` : Input angka jeda minimal anti-ban (detik).
+* `#delay-max` : Input angka jeda maksimal anti-ban (detik).
+* `#toggle-simulation` : Checkbox sakelar Mode Simulasi / Demo.
+* `#toggle-headless` : Checkbox sakelar Mode Headless (senyap & hemat daya).
+* `#toggle-captcha-solver` : Checkbox sakelar AI Puzzle Captcha Auto-Solve.
+* `#btn-start-campaign` : Tombol utama **"Mulai Outreach Sekarang"**.
+* `#btn-pause-campaign` : Tombol **"Jeda"** kampanye.
+* `#btn-resume-campaign` : Tombol **"Lanjutkan"** kampanye.
+* `#btn-stop-campaign` : Tombol merah **"Hentikan"** kampanye.
+
+#### 5. Tab Dashboard - Live Progress & Terminal Stream
+* `#live-progress-card` : Kontainer kartu aktivitas realtime.
+* `#progress-ratio` : Teks rasio progres (contoh: `"3 / 10 Target"`).
+* `#progress-percent` : Teks persentase progres (contoh: `"30%"`).
+* `#progress-bar-fill` : Elemen bar pengisian progres visual (`width: X%`).
+* `#console-logs` : Kontainer terminal audit log streaming tempat baris log disisipkan.
+* `#btn-clear-console` : Tombol membersihkan baris log di terminal mini.
+
+#### 6. Tab Result & Bukti DM
+* `#stat-total` : Angka metrik ringkasan Total Diproses.
+* `#stat-sent` : Angka metrik ringkasan Berhasil Terkirim (hijau).
+* `#stat-closed` : Angka metrik ringkasan DM Tertutup / Privat (kuning).
+* `#stat-failed` : Angka metrik ringkasan Gagal / Error (merah).
+* `#results-count-badge` : Badge angka hasil selesai di menu sidebar.
+* `#search-results-input` : Kolom pencarian username target.
+* `#filter-status-select` : Dropdown filter status (`all`, `sent`, `dm_closed`, `failed`, `pending`).
+* `#btn-export-csv` : Tombol mengunduh rekapitulasi data format CSV.
+* `#btn-clear-results` : Tombol merah menghapus seluruh riwayat data & mereset nomor urut tugas.
+* `#results-table` : Elemen tabel utama hasil kampanye.
+* `#results-table-body` : `<tbody>` tempat baris data dirender secara dinamis oleh JavaScript.
+
+#### 7. Modal Dialog Pratinjau Screenshot Bukti
+* `#proof-modal` : Kontainer utama dialog modal pratinjau bukti.
+* `#modal-backdrop` : Layer latar belakang gelap modal.
+* `#modal-target-name` : Judul target pada header modal (`"Bukti Screenshot DM: @username"`).
+* `#btn-close-modal` : Tombol silang `X` untuk menutup modal.
+* `#modal-proof-img` : Elemen `<img>` penampil berkas screenshot bukti resolusi tinggi.
+* `#modal-sent-time` : Waktu tanggal pengiriman terkonfirmasi.
+* `#btn-download-proof` : Tautan unduh berkas gambar bukti.
+* `#btn-modal-close-action` : Tombol penutup sekunder di footer modal.
+
+#### 8. Tab Riwayat Log Lengkap
+* `#full-log-viewer` : Kontainer penampil riwayat log mendalam.
+* `#btn-refresh-full-logs` : Tombol memuat ulang riwayat log dari server.
+
+---
+
+## 6. Struktur Lengkap Repositori & Direktori
 
 ```
 Outreach_automation/
 ├── app/
-│   └── static/               # Frontend Assets (Modern Glassmorphism UI)
-│       ├── css/style.css     # Clean Responsive Stylesheet
-│       ├── js/app.js         # Reactive Client Controller & WebSocket Handler
-│       └── index.html        # Interactive Single Page Dashboard
-├── browser_profile/          # Playwright Persistent User Profile (Cookies & Cache)
+│   └── static/                        # Frontend Web Dashboard Assets
+│       ├── css/
+│       │   ├── landing.css            # Stylesheet Landing Page Modern
+│       │   └── style.css              # Stylesheet Utama Dashboard (Clean Light Theme)
+│       ├── img/                       # Brand Logos, Workspace & Hero Visual Assets
+│       ├── js/
+│       │   └── app.js                 # Core Frontend Controller, API Client, WS Telemetry
+│       ├── dashboard.html             # Dokumen Operasional Utama Dashboard
+│       ├── index.html                 # Entry Point Pengalihan Aplikasi
+│       └── landing.html               # Showcase & Penjelasan Fitur Platform
+├── browser_profile/                   # Direktori Fisik Sesi Chromium (Cookies, Cache, Storage)
 ├── config/
-│   ├── constants.js          # Tunable Delays, User-Agents & Resilient Selectors
-│   └── paths.js              # Centralized Directory Resolution
+│   ├── constants.js                   # Tunable Delays, User-Agent, Robust Resilient Selectors
+│   └── paths.js                       # Sentralisasi Resolusi Path Direktori Proyek
 ├── data/
-│   ├── automation.db         # High-Performance SQLite3 Relational Database
-│   └── tiktok_cookies.json   # Session State Backup
-├── proofs/                   # High-Resolution Delivery Proof Screenshots (.png)
+│   ├── automation.db                  # Database Relasional SQLite3
+│   ├── session_info.json              # Cache Informasi Akun Pengirim Aktif
+│   └── tiktok_cookies.json            # Backup State Cookie Sesi
+├── proofs/                            # Direktori Penyimpanan Tangkapan Layar Bukti (.png)
 ├── src/
 │   ├── api/
-│   │   ├── controllers/      # Express API Controllers (Auth, Campaign, Task, Log)
-│   │   ├── middlewares/      # Multer File Upload Interceptors (.csv, .txt)
-│   │   └── routes/           # RESTful Resource Modular Routes
+│   │   ├── controllers/               # Controllers (Auth, Campaign, Task, Log)
+│   │   ├── middlewares/               # Multer File Upload Interceptors (.csv, .txt)
+│   │   └── routes/                    # Modular RESTful API Route Definitions
 │   ├── core/
-│   │   ├── browser.js        # Playwright Persistent Lifecycle & Turbo Interceptor
-│   │   └── websocket.js      # Centralized Event Emitter & WebSocket Hub
+│   │   ├── browser.js                 # Playwright Persistent Browser & Stealth Init
+│   │   └── websocket.js               # WebSocket Hub & Realtime Event Broadcaster
 │   ├── database/
-│   │   ├── repositories/     # Data Access Objects (Tasks, Campaigns, Sessions)
-│   │   ├── connection.js     # SQLite3 Singleton Connection Pool
-│   │   ├── schema.js         # DDL Table Migrations & Indexing
-│   │   └── index.js          # Repository Registry
+│   │   ├── repositories/
+│   │   │   ├── campaign.repo.js       # Query & Manipulasi Tabel Kampanye
+│   │   │   ├── log.repo.js            # Riwayat Log Aktivitas
+│   │   │   └── task.repo.js           # Manajemen Antrean Tugas & Reset Sequence
+│   │   ├── connection.js              # SQLite3 Singleton Connection Pool
+│   │   ├── schema.js                  # DDL Migrasi Skema Tabel Database
+│   │   └── index.js                   # Registry Repository Terpusat
 │   ├── services/
-│   │   ├── auth.service.js   # TikTok Session Validation & Profile Extraction
-│   │   ├── bot.service.js    # Queue Runner, Throttling & Loop Automation
-│   │   ├── captcha.service.js# AI Puzzle Captcha Resolver & Human Drag Curves
-│   │   └── tiktok.service.js # Page Navigation, Chat Input & DOM Operations
-│   └── app.js                # Express Application Setup & Middleware Pipeline
-├── contoh_target_tiktok.txt  # Sample Target List for Quick Testing
-├── login_tiktok.bat          # 1-Click Session Login Launcher for Windows
-├── start_platform.bat        # 1-Click Server & UI Dashboard Launcher
-├── server.js                 # Lean Server Entry Point (< 30 lines)
-└── package.json              # Project Dependencies and NPM Scripts
+│   │   ├── auth.service.js            # Validasi Sesi Login & Resolusi Username Pengirim
+│   │   ├── bot.service.js             # Orchestrator Antrean, Jeda Waktu, & State Loop
+│   │   ├── captcha.service.js         # Canvas Scanner & Human Easing Curve Drag
+│   │   └── tiktok.service.js          # Navigasi Profil, Pengetikan DM, Verifikasi Balon
+│   └── app.js                         # Inisialisasi Express & Pipeline Middleware
+├── contoh_target_tiktok.txt           # Berkas Sampel Target untuk Uji Coba Cepat
+├── login_helper.js                    # CLI Helper untuk Membuka Browser Login
+├── login_tiktok.bat                   # Script 1-Click Buka Login TikTok (Windows)
+├── scaleup_planning.md                # Rencana Arsitektur Skala Besar (Next.js + Laravel)
+├── server.js                          # Server Entry Point (< 30 Baris Kode Bersih)
+├── start_platform.bat                 # Script 1-Click Menjalankan Platform (Windows)
+├── package.json                       # Konfigurasi Dependensi & Script NPM
+└── README.md                          # Master Dokumentasi Proyek (Dokumen ini)
 ```
 
 ---
 
-## 🛠️ Tech Stack & Ecosystem
+## 7. Spesifikasi Skema Database Relasional (SQLite)
 
-| Layer | Technology | Key Capabilities |
-| :--- | :--- | :--- |
-| **Backend Runtime** | Node.js (v18+) | Non-blocking Event-Driven I/O Engine |
-| **HTTP Framework** | Express 4.19 | Modular Router, Middleware Pipelines, REST API |
-| **Headless Automation** | Playwright 1.45 | Persistent Contexts, Anti-Detection Chromium Flag, Route Filtering |
-| **Database** | SQLite3 | Zero-Config, Fast Relational Storage for Tasks & Logs |
-| **Realtime Channel** | WS (Native WebSockets) | Low-latency state broadcasts & Live Log Streaming |
-| **File Parser** | Multer | Robust multipart file upload processing for `.txt` & `.csv` |
-| **Frontend** | Vanilla HTML5 / CSS3 / ES6 | Fast, zero-dependency, responsive UI with Glassmorphic design |
+Database disimpan secara lokal di `data/automation.db` dengan skema DDL relasional berikut:
 
----
+### Tabel `campaigns`
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | INTEGER PRIMARY KEY AUTOINCREMENT | ID unik kampanye |
+| `name` | TEXT NOT NULL | Nama pengenal kampanye / batch |
+| `message_template` | TEXT NOT NULL | String template tunggal ATAU JSON Tiering (`{"mode":"tiered", ...}`) |
+| `total_loaded` | INTEGER DEFAULT 0 | Jumlah total target yang dimuat dari berkas/teks |
+| `limit_count` | INTEGER DEFAULT 0 | Batas kuota target yang akan dieksekusi |
+| `delay_min` | INTEGER DEFAULT 20 | Jeda acak minimal per pengiriman (detik) |
+| `delay_max` | INTEGER DEFAULT 45 | Jeda acak maksimal per pengiriman (detik) |
+| `status` | TEXT DEFAULT 'idle' | Status: `idle`, `running`, `paused`, `completed`, `stopped` |
+| `created_at` | TIMESTAMP | Waktu pembuatan kampanye |
 
-## 🚀 Quickstart Guide
+### Tabel `outreach_tasks`
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | INTEGER PRIMARY KEY AUTOINCREMENT | ID unik tugas (menentukan nomor bukti `proof_X`) |
+| `campaign_id` | INTEGER | Relasi ke tabel `campaigns(id)` |
+| `target_url` | TEXT NOT NULL | Link profil TikTok target |
+| `username` | TEXT NOT NULL | Handle username akun target |
+| `status` | TEXT DEFAULT 'pending' | Status: `pending`, `sent`, `failed`, `dm_closed`, `skipped` |
+| `message_sent` | TEXT | Pesan personalized aktual yang dikirimkan ke target |
+| `proof_path` | TEXT | Jalur berkas tangkapan layar bukti (`proofs/...png`) |
+| `error_detail` | TEXT | Keterangan penyebab jika status gagal |
+| `follower_count` | TEXT | Jumlah pengikut target yang terdeteksi di profil (contoh: `"1.5K"`) |
+| `sent_at` | TIMESTAMP | Waktu keberhasilan verifikasi pengiriman |
+| `created_at` | TIMESTAMP | Waktu pencatatan tugas |
 
-### Prasyarat
-- [Node.js v18.0.0+](https://nodejs.org/) terinstall di sistem operasi Anda.
-- Google Chrome atau Chromium browser (Playwright secara otomatis menyediakan runtime Chromium).
-
-### 1. Instalasi Dependensi
-```bash
-# Clone repository atau buka folder project
-cd d:\Coding\Outreach_automation
-
-# Install package dependencies
-npm install
-```
-
-### 2. Menjalankan Platform
-
-#### Opsi A: Menggunakan Batch Script (Windows Recommended)
-1. Double click **`start_platform.bat`**.
-2. Console server akan aktif dan browser otomatis membuka `http://localhost:8000`.
-
-#### Opsi B: Menggunakan NPM CLI
-```bash
-npm start
-```
-Buka peramban favorit Anda dan kunjungi: **`http://localhost:8000`**
-
----
-
-## 📋 Panduan Operasional
-
-### Langkah 1: Autentikasi Sesi TikTok (Sekali Saja)
-1. Di panel kiri bawah dashboard (*Status Sesi TikTok*), klik tombol **"Login TikTok via Browser"** (atau jalankan `login_tiktok.bat`).
-2. Jendela browser Chromium akan terbuka menampilkan halaman login resmi TikTok.
-3. Silakan login (Scan QR Code via aplikasi TikTok di Smartphone direkomendasikan).
-4. Begitu login sukses, sistem otomatis mendeteksi username aktif Anda (misal: `@zakaria.code`), menyimpan cookie permanen, dan menutup browser.
-
-### Langkah 2: Memuat Target Akun
-- **Drag & Drop File:** Upload file `.txt` atau `.csv` yang berisi daftar target (satu link / username per baris). File sampel tersedia di `contoh_target_tiktok.txt`.
-- **Direct Paste:** Paste daftar link profil langsung di textarea modal input.
-- Sistem otomatis membersihkan format URL dan mendeteksi total target valid.
-
-### Langkah 3: Konfigurasi Pesan & Kuota
-- Tentukan jumlah kuota yang ingin diproses (misal: kirim ke 10 dari 50 target yang diunggah) menggunakan **Range Slider** atau **Quick Selector**.
-- Tulis template pesan personalized dengan memanfaatkan variable tag:
-  - `{username}` atau `{name}`: Otomatis digantikan dengan username akun penerima.
-- Atur jeda pengiriman (Human Jitter) untuk menjaga reputasi akun (default: 20-45 detik).
-
-### Langkah 4: Eksekusi & Monitoring
-- Aktifkan toggle **"Mode Demo (Simulasi)"** jika ingin mempresentasikan platform kepada klien tanpa mengirim pesan nyata.
-- Nonaktifkan demo mode dan klik **"Mulai Outreach Sekarang"** untuk eksekusi langsung.
-- Pantau pergerakan bot secara visual melalui log streaming real-time di bagian kanan dashboard.
-
-### Langkah 5: Audit & Export Laporan
-- Masuk ke tab **"Result & Bukti DM"**.
-- Periksa status setiap baris (Terkirim, DM Tertutup, atau Gagal).
-- Klik tombol **"Lihat Bukti"** untuk memvalidasi screenshot obrolan asli.
-- Klik **"Export CSV"** untuk mengunduh rekapitulasi data format Excel.
+### Tabel `activity_logs`
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | INTEGER PRIMARY KEY AUTOINCREMENT | ID log aktivitas |
+| `campaign_id` | INTEGER | Relasi ke kampanye terkait |
+| `level` | TEXT DEFAULT 'INFO' | Tingkat keparahan: `INFO`, `WARN`, `SUCCESS`, `ERROR` |
+| `message` | TEXT NOT NULL | Pesan telemetri mesin otomasi |
+| `created_at` | TIMESTAMP | Waktu pencatatan log |
 
 ---
 
-## 🌐 REST API Reference
+## 8. Dokumentasi Lengkap REST API Endpoints
 
-| Method | Endpoint | Deskripsi |
-| :--- | :--- | :--- |
-| `GET` | `/api/session/status` | Mengecek validitas sesi login & username pengirim aktif |
-| `GET` | `/api/session/open-login` | Memicu pembukaan Chromium browser untuk alur login manual |
-| `POST` | `/api/session/update-username`| Mengupdate manual username akun pengirim yang tersimpan |
-| `POST` | `/api/campaign/parse-file` | Mengunggah & mem-parse file target (`.txt` / `.csv`) via Multer |
-| `POST` | `/api/campaign/parse-text` | Memvalidasi dan membersihkan raw text list username target |
-| `POST` | `/api/campaign/create` | Menginisialisasi kampanye baru dengan kuota & template pesan |
-| `POST` | `/api/campaign/:id/start` | Menjalankan antrean bot outreach untuk kampanye tertentu |
-| `POST` | `/api/campaign/:id/pause` | Memberhentikan sementara proses pengiriman pesan |
-| `POST` | `/api/campaign/:id/resume`| Melanjutkan antrean pengiriman pesan yang tertunda |
-| `POST` | `/api/campaign/:id/stop` | Membatalkan eksekusi kampanye yang sedang berlangsung |
-| `GET` | `/api/tasks` | Mengambil seluruh daftar histori tugas, status, & path bukti screenshot |
-| `ALL` | `/api/tasks/clear` | Mengosongkan seluruh histori tasks dan rekap hasil pengiriman |
-| `GET` | `/api/stats` | Mengambil statistik agregasi metrik (Total, Berhasil, Gagal, DM Tertutup) |
-| `GET` | `/api/export/csv` | Menghasilkan streaming file unduhan CSV untuk rekapitulasi kampanye |
+### 🔐 Modul Autentikasi & Sesi Browser (`/api/session`)
+
+#### 1. Cek Status Sesi
+* **Method:** `GET`
+* **Endpoint:** `/api/session/status`
+* **Response Sukses:**
+  ```json
+  {
+    "isLoggedIn": true,
+    "username": "kingzakarias",
+    "cookiesCount": 42
+  }
+  ```
+
+#### 2. Buka Browser untuk Login
+* **Method:** `GET`
+* **Endpoint:** `/api/session/open-login`
+* **Response Sukses:**
+  ```json
+  {
+    "success": true,
+    "message": "Jendela browser login TikTok telah dibuka."
+  }
+  ```
+
+#### 3. Update Manual Username
+* **Method:** `POST`
+* **Endpoint:** `/api/session/update-username`
+* **Payload:** `{ "username": "nama_akun_baru" }`
+* **Response Sukses:**
+  ```json
+  { "success": true, "username": "nama_akun_baru" }
+  ```
+
+#### 4. Logout Sesi
+* **Method:** `POST`
+* **Endpoint:** `/api/session/logout`
+* **Response Sukses:**
+  ```json
+  { "success": true, "message": "Sesi akun berhasil dihapus." }
+  ```
 
 ---
 
-## 🔌 WebSocket Telemetry Contracts
+### 🚀 Modul Kampanye & Eksekusi Bot (`/api/campaign`)
 
-Koneksi dibuat ke `ws://localhost:8000/ws`. Server menyiarkan event dengan skema payload standar:
+#### 1. Upload & Parsing Berkas Target
+* **Method:** `POST`
+* **Endpoint:** `/api/campaign/parse-file`
+* **Body:** `multipart/form-data` (Field: `file` berformat `.txt` atau `.csv`)
+* **Response Sukses:**
+  ```json
+  {
+    "success": true,
+    "filename": "targets.txt",
+    "total_found": 15,
+    "targets": [
+      { "username": "creator1", "target_url": "https://www.tiktok.com/@creator1" }
+    ]
+  }
+  ```
 
+#### 2. Parsing Target dari Teks Manual
+* **Method:** `POST`
+* **Endpoint:** `/api/campaign/parse-text`
+* **Payload:** `{ "raw_text": "https://www.tiktok.com/@creator1\n@creator2" }`
+* **Response Sukses:**
+  ```json
+  {
+    "success": true,
+    "total_found": 2,
+    "targets": [...]
+  }
+  ```
+
+#### 3. Membuat Kampanye Baru
+* **Method:** `POST`
+* **Endpoint:** `/api/campaign/create`
+* **Payload (Mode Tiering):**
+  ```json
+  {
+    "name": "Endorsement Ramadan Batch 1",
+    "message_template": "{\"mode\":\"tiered\",\"tier_1000\":\"...\",\"tier_200\":\"...\",\"fallback\":\"...\"}",
+    "targets": [...],
+    "limit_count": 10,
+    "delay_min": 20,
+    "delay_max": 45
+  }
+  ```
+* **Response Sukses:**
+  ```json
+  { "success": true, "campaign_id": 98, "total_targets": 10 }
+  ```
+
+#### 4. Memulai Antrean Kampanye
+* **Method:** `POST`
+* **Endpoint:** `/api/campaign/:id/start?simulation=false&headless=false&auto_solve_captcha=true`
+* **Response Sukses:**
+  ```json
+  { "success": true, "message": "Antrean proses outreach telah dimulai." }
+  ```
+
+#### 5. Kontrol Kampanye (Jeda, Lanjut, Hentikan)
+* `POST /api/campaign/:id/pause` $\rightarrow$ Menjeda proses antrean.
+* `POST /api/campaign/:id/resume` $\rightarrow$ Melanjutkan antrean yang tertunda.
+* `POST /api/campaign/:id/stop` $\rightarrow$ Membatalkan dan mematikan browser runner.
+
+---
+
+### 📊 Modul Tugas, Hasil & Export (`/api/tasks`)
+
+* `GET /api/tasks?campaign_id=98&status=all` $\rightarrow$ Mengambil riwayat pengiriman, pesan terkirim, status, data follower, dan path bukti screenshot.
+* `POST /api/tasks/clear` $\rightarrow$ Menghapus semua riwayat tugas dan mereset penomoran sequence ke 1.
+* `GET /api/stats` $\rightarrow$ Menghitung ringkasan metrik total, sent, dm_closed, dan failed.
+* `GET /api/export/csv` $\rightarrow$ Mengunduh file CSV lengkap dengan kolom:
+  `ID, Target URL, Username, Followers, Status, Pesan Terkirim, Error Detail, Waktu Pengiriman`.
+
+---
+
+## 9. Spesifikasi Protokol WebSocket Telemetry
+
+Koneksi duplex realtime terhubung di: `ws://localhost:8000/ws`.
+
+Format struktur pesan WebSocket:
 ```json
 {
-  "type": "event_type",
-  "data": { ... },
-  "timestamp": "12:05:42"
+  "type": "log | task_updated | campaign_status | login_success | tasks_cleared",
+  "data": { ... }
 }
 ```
 
-### Event Types:
-- `log`: Log real-time dari bot service (`{ message: "Membuka profil target...", level: "info" | "warn" | "error" }`).
-- `progress`: Update progres kampanye `{ current: 5, total: 10, percent: 50 }`.
-- `task_completed`: Notifikasi setiap target selesai diproses `{ task: { target_username, status, proof_screenshot } }`.
-- `bot_status`: Perubahan status state bot `{ status: "idle" | "running" | "paused" | "stopped" }`.
+### Rincian Tipe Event:
+1. **`log`**: Streaming aktivitas bot secara instan.
+   ```json
+   {
+     "level": "INFO | SUCCESS | WARN | ERROR",
+     "message": "📊 Target @creator [Followers: 1.5K] -> Memilih: Tier 1.000+ Followers"
+   }
+   ```
+2. **`task_updated`**: Dipancarkan setiap kali satu tugas selesai dieksekusi.
+   ```json
+   {
+     "task_id": 1,
+     "username": "ivanrukmaaa",
+     "status": "sent",
+     "proof_path": "proofs/proof_1_ivanrukmaaa_1794380724881.png",
+     "follower_count": "1194",
+     "progress": { "current": 1, "total": 5 }
+   }
+   ```
+3. **`campaign_status`**: Status siklus hidup kampanye (`running`, `paused`, `idle`, `stopped`, `completed`).
+4. **`login_success`**: Diterbitkan saat login akun TikTok di browser terverifikasi berhasil.
 
 ---
 
-## 🛡️ Anti-Detection & Compliance Best Practices
+## 10. Kebijakan Anti-Deteksi & Mitigasi Limit Algoritma TikTok
 
-1. **Human Emulation Throttling:** Sistem menerapkan jeda acak (*delay jitter*) terdistribusi secara default antara 20–45 detik per DM untuk meniru perilaku natural manusia.
-2. **Stealth Chromium Flags:** Playwright di-injeksi dengan flag `--disable-blink-features=AutomationControlled` guna menyembunyikan properti `navigator.webdriver`.
-3. **Daily Quota Safety Limit:** Direkomendasikan untuk membatasi pengiriman maksimal **30–50 DM per hari per akun TikTok** guna menjaga reputasi trust-score akun pengirim.
+Agar akun TikTok pengirim tetap aman dan terhindar dari sanksi pembatasan pengiriman (*shadowban* / limit harian), seluruh operator wajib mengikuti parameter berikut:
+
+1. **Jeda Waktu Alami (Human Jitter):**
+   * Jangan pernah mengatur jeda di bawah 15 detik.
+   * Standar aman yang direkomendasikan adalah **20 s.d. 45 detik** per pesan.
+2. **Batas Kuota Pengiriman Harian:**
+   * **Akun Baru / Umur < 3 Bulan:** Maksimal **20–30 DM per hari**.
+   * **Akun Mapan / Umur > 6 Bulan:** Maksimal **40–60 DM per hari**.
+3. **Penyisipan Variabel Dinamis:**
+   * Selalu gunakan tag `{username}` di dalam copywriting pesan agar tidak memicu filter deteksi pesan duplikat identik dari TikTok.
+4. **Hindari Tautan Luar pada Pesan Pertama:**
+   * Jangan meletakkan link website eksternal langsung di DM pembuka. Ajak target merespons terlebih dahulu sebelum mengirimkan tautan Shopee / WhatsApp.
 
 ---
 
-## 💼 Portofolio & Demonstration Mode
+## 11. Panduan Instalasi & Eksekusi Cepat
 
-Jika Anda ingin menunjukkan platform ini kepada calon pemberi kerja, rekan bisnis, atau klien internasional:
-1. Jalankan platform dan centang switch **"Mode Demo (Simulasi)"**.
-2. Masukkan file target sampel (`contoh_target_tiktok.txt`).
-3. Tekan **"Mulai Outreach Sekarang"**.
-4. Sistem akan mensimulasikan seluruh siklus kerja: logging interaktif real-time, progress bar, verifikasi random delay, hingga pembuatan data hasil audit tanpa perlu khawatir akun TikTok dibatasi.
+### Prasyarat Sistem
+* **OS:** Windows 10/11, macOS, atau Linux (Ubuntu 20.04+).
+* **Node.js:** Versi **18.x** atau **20.x+** terpasang.
+* **Browser:** Google Chrome terpasang di sistem operasi.
 
----
+### Langkah Menjalankan:
+```bash
+# 1. Masuk ke direktori kerja
+cd d:\Coding\Outreach_automation
 
-## 📄 Lisensi
-Didistribusikan di bawah lisensi MIT. Silakan gunakan untuk keperluan komersial, freelance, atau portofolio pribadi.
+# 2. Pasang dependensi
+npm install
+
+# 3. Jalankan platform dalam mode pemantauan (Hot-Reload)
+npm run dev
+```
+
+Buka peramban favorit Anda dan kunjungi:
+* **Dashboard Aplikasi:** [`http://localhost:8000/dashboard`](http://localhost:8000/dashboard)
+* **Landing Page:** [`http://localhost:8000`](http://localhost:8000)
